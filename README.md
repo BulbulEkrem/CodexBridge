@@ -24,7 +24,9 @@ src/CodexBridge.Core/      platformsuz: dashboard/v1 modelleri, AdaptiveRefresh,
                            FakeUsageSource, HttpUsageSource, WinCodexBarSource (Faz 2 adaptörü)
 src/CodexBridge.Host/      dashboard/v1 HTTP host (ASP.NET Core) — telefon buraya bağlanır
 src/CodexBridge.Taskbar/   WinUI 3 görev çubuğu yüzeyi + parent'lama + Explorer-restart gözcüsü
-src/CodexBridge.SelfTest/  assertion konsolu (SAC dotnet test'i engellediği için)
+src/CodexBridge.JsHost/    Faz 5: ClearScript/V8 ile üst akışın .js sağlayıcılarını çalıştırma
+src/CodexBridge.SelfTest/  Core assertion konsolu (SAC dotnet test'i engellediği için)
+src/CodexBridge.JsProbe/   Faz 5 fizibilite probu (gerçek xai.js V8'de)
 spikes/taskbar-parenting/  Faz 0 kanıt spike'ı (WinForms, Windows SDK gerektirmez)
 phone/android/  phone/ios/ telefon widget iskeleleri (ilgili araç zincirinde derlenir)
 docs/                      mimari ve faz belgeleri
@@ -49,8 +51,9 @@ dotnet build src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj -c Debug -p:Plat
 - ✅ Faz 3 — dashboard/v1 HTTP host, **curl ile uçtan uca doğrulandı** (401 fails-closed / 200)
 - ✅ Testler — self-test konsolu 22/22 geçiyor
 - 🧩 Faz 4 — iOS/Android widget iskeleleri yazıldı (ilgili araç zincirinde derlenir)
+- ✅ **Faz 5 — kendi sağlayıcı katmanı (ClearScript/V8): gerçek `xai.js` V8'de ÇALIŞTIRILDI** (11/11 prob)
 - ⏳ **Canlı çalışma testi (kullanıcı makine başında olunca):** band gerçekten çubukta
   görünüyor mu, Explorer-restart hayatta kalma; telefon widget'larının cihazda derlenmesi
-- ⬜ Faz 5–7 — kendi sağlayıcı katmanı (ClearScript), çerez katmanı (DPAPI), push bildirimi
+- ⬜ Faz 6–7 — çerez katmanı (DPAPI), push bildirimi; JS eklentilerin canlı sağlayıcı entegrasyonu
 
 Ayrıntı: [docs/03-FAZ2-3-VE-TELEFON.md](docs/03-FAZ2-3-VE-TELEFON.md)
