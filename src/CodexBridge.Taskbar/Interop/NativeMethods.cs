@@ -12,6 +12,13 @@ internal static partial class NativeMethods
     internal const int GWL_STYLE = -16;
     internal const int WS_POPUP = unchecked((int)0x80000000);
     internal const int WS_CHILD = 0x40000000;
+    // Görev çubuğu band'ında istenmeyen pencere kromu (başlık/kenarlık/sistem menüsü/düğmeler).
+    internal const int WS_CAPTION = 0x00C00000;
+    internal const int WS_THICKFRAME = 0x00040000;
+    internal const int WS_SYSMENU = 0x00080000;
+    internal const int WS_MINIMIZEBOX = 0x00020000;
+    internal const int WS_MAXIMIZEBOX = 0x00010000;
+    internal const int WS_CHROME = WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 
     internal const uint SWP_NOACTIVATE = 0x0010;
     internal const uint SWP_FRAMECHANGED = 0x0020;

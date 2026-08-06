@@ -10,6 +10,12 @@ Giriş formatı: `## YYYY-MM-DD — <aşama>` başlığıyla kısa maddeler.
 - **Lisans:** Hem Deskband11 hem Win-CodexBar **MIT** → sarmalama/uyarlama serbest (Faz 2 açık sorusu kapandı).
 - **Araştırma düzeltmesi:** Win-CodexBar'ın HTTP `serve`'ü VAR (`rust/src/cli/serve.rs`: `/health`,`/usage`,`/cost`, bearer token, allow-plain-http) — araştırma "yok" demişti. Ama `/dashboard/v1/snapshot` YOK. Sonuç: Faz 3 sıfırdan değil; Win-CodexBar serve + ince çeviri adaptörü kısayolu mümkün.
 
+## 2026-08-07 — Faz 1 CANLI TEST (kullanıcı makinesinde doğrulandı)
+- **Explorer-restart hayatta kalma GEÇTI** ✅ — Deskband11'in çözemediği risk. Gözcü (üst-seviye pencere, TaskbarCreated dinler) tetiklenip band'ı yeni Shell_TrayWnd'e otomatik yeniden parent'lıyor; app süreci hayatta kalıyor.
+- **BULUNAN HATA 1 — krom:** `ExtendsContentIntoTitleBar=true` tek başına WinUI caption düğmelerini (min/büyüt/kapat) kaldırmıyor. Çözüm: `OverlappedPresenter.SetBorderAndTitleBar(false,false)` (+ IsMaximizable/Minimizable=false) VE Win32 `WS_CAPTION|WS_THICKFRAME|WS_SYSMENU|WS_MIN/MAXBOX` stillerini SetParent sırasında sıyır.
+- **BULUNAN HATA 2 — Explorer-restart çökmesi:** gözcü tetikleniyordu ama `OnTaskbarRecreated`'ta ölmüş band penceresine `Window.Close()` çağrısı YAKALANAMAYAN native segfault (exit 139) veriyordu (try/catch işe yaramaz). Çözüm: ölmüş pencereye Close() ÇAĞIRMA — referansı null'la, doğrudan yeni pencere kur. Stack: `Microsoft.UI.Xaml.Window.Close() ← OnTaskbarRecreated`.
+- Band genişliği 160→280 dip (üç pill sığsın).
+
 ## 2026-08-06 — Faz 1 (WinUI yüzey)
 - **Yığın:** .NET 9 / WinUI 3 unpackaged (`WindowsPackageType=None`), WinUIEx, el yazımı P/Invoke (CsWin32 yerine — öngörülebilir derleme). Windows 11 SDK 26100 kuruldu.
 - **Katman ayrımı:** `CodexBridge.Core` (net9.0, platformsuz) modelleri + AdaptiveRefresh + IUsageSource taşır; `CodexBridge.Taskbar` (WinUI) yalnızca sunum + parent'lama. Veri kaynağı `IUsageSource` arkasında (Faz1 sahte → Faz2 Win-CodexBar → Faz5 kendi katman).

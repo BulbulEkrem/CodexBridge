@@ -52,7 +52,10 @@ public partial class App : Application
         // Gözcü UI iş parçacığında olduğundan doğrudan çalışabiliriz; yine de güvenli tarafta kalalım.
         _uiQueue?.TryEnqueue(() =>
         {
-            try { _band?.Close(); } catch { /* eski pencere zaten ölmüş olabilir */ }
+            // ÖNEMLİ: eski band penceresine Close() ÇAĞIRMA. Explorer öldüğünde Shell_TrayWnd
+            // ile birlikte band'ın HWND'si zaten yok edildi; ölmüş bir WinUI penceresini
+            // kapatmak yakalanamayan native segfault'a yol açar (canlı testte tespit edildi).
+            // Referansı bırak, çöp toplayıcıya bırak, doğrudan yenisini kur.
             _band = null;
             // Yeni görev çubuğu tam hazır olsun diye küçük bir gecikmeyle yeniden kur.
             var timer = _uiQueue!.CreateTimer();

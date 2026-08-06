@@ -47,13 +47,25 @@ Not: `dotnet new sln` bu ortamda `.slnx` (yeni XML formatı) üretti. Taskbar ya
 x64/ARM64 hedefler; çözümü platform override'sız derleyin (her proje kendi platformunu kullanır)
 ya da doğrudan `dotnet build src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj -p:Platform=x64`.
 
-## HENÜZ DOĞRULANMADI (canlı çalışma — kullanıcı makine başında olunca)
+## CANLI TEST SONUÇLARI (2026-08-07, kullanıcı makinesinde)
 
-- [ ] Uygulama çalışınca band gerçekten görev çubuğunda görünüyor mu (WinForms spike gösterdi; WinUI teyidi lazım)
-- [ ] **Explorer-restart:** `explorer.exe` yeniden başlatıldığında gözcü band'ı geri getiriyor mu (asıl sınav)
-- [ ] Çoklu monitör / farklı DPI'da konum doğru mu
+- [x] **Band görev çubuğunda görünüyor** ✅ — WinUI penceresi `Shell_TrayWnd` çocuğu, x=12, üç sağlayıcı.
+- [x] **Explorer-restart hayatta kalma** ✅ — **asıl sınav geçti.** `explorer.exe` öldürülüp
+  yeniden başlatıldığında app süreci hayatta kaldı, gözcü tetiklendi, band YENİ görev çubuğuna
+  otomatik yeniden parent'landı. **Deskband11'in çözemediği şey artık çalışıyor.**
+- [x] **Pencere kromu kaldırıldı** ✅ — ilk sürümde WinUI başlık çubuğu min/büyüt/kapat düğmeleri
+  görünüyordu; `OverlappedPresenter.SetBorderAndTitleBar(false,false)` + Win32 `WS_CHROME` sıyırma ile giderildi.
+
+### Canlı testte bulunan iki hata ve düzeltmeleri
+1. **Başlık çubuğu düğmeleri görünüyordu** → `ExtendsContentIntoTitleBar` tek başına yetmedi;
+   `OverlappedPresenter.SetBorderAndTitleBar(false,false)` + caption stillerini Win32'de sıyırma.
+2. **Explorer-restart'ta çökme (segfault)** → gözcü tetikleniyordu ama ölmüş band penceresine
+   `Window.Close()` çağrısı yakalanamayan native çökmeye yol açıyordu. Düzeltme: ölmüş pencereye
+   `Close()` ÇAĞIRMA — referansı bırak, doğrudan yenisini kur.
+
+## HENÜZ DOĞRULANMADI
+- [ ] Çoklu monitör / farklı DPI'da konum
 - [ ] Görev çubuğu otomatik gizlemede band birlikte gizleniyor mu
-- [ ] WinUI penceresinin `WS_CHILD` yapıldığında saydamlık/krom davranışı
 
 ## Sıradaki (Faz 2)
 

@@ -12,7 +12,7 @@ internal static class TaskbarHost
 {
     /// <summary>Verilen pencereyi görev çubuğuna parent'lar ve çubuğun soluna yerleştirir.</summary>
     /// <returns>Başarılıysa true (görev çubuğu bulunduysa).</returns>
-    internal static bool MoveToTaskbar(IntPtr bandHwnd, int leftOffsetDips = 12, int widthDips = 160)
+    internal static bool MoveToTaskbar(IntPtr bandHwnd, int leftOffsetDips = 12, int widthDips = 280)
     {
         IntPtr taskbar = FindWindowW("Shell_TrayWnd", null);
         if (taskbar == IntPtr.Zero) return false;
@@ -20,8 +20,9 @@ internal static class TaskbarHost
         IntPtr rebar = FindWindowExW(taskbar, IntPtr.Zero, "ReBarWindow32", null);
 
         // WS_POPUP çıkar, WS_CHILD ekle → z-order kavgası ve autohide sorunları çözülür.
+        // Ayrıca başlık/kenarlık/sistem menüsü/düğme stillerini sıyır (kromsuz band).
         int style = GetWindowLongW(bandHwnd, GWL_STYLE);
-        style = (style & ~WS_POPUP) | WS_CHILD;
+        style = (style & ~(WS_POPUP | WS_CHROME)) | WS_CHILD;
         SetWindowLongW(bandHwnd, GWL_STYLE, style);
         SetParent(bandHwnd, taskbar);
 

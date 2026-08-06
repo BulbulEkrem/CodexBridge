@@ -5,6 +5,7 @@ using CodexBridge.Taskbar.Interop;
 using CodexBridge.Taskbar.Taskbar;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -39,8 +40,16 @@ public sealed partial class MainWindow : Window
         _source = source;
         InitializeComponent();
 
-        // Çubuğa oturacağı için pencere kromu istemiyoruz.
+        // Çubuğa oturacağı için pencere kromu istemiyoruz: başlık çubuğu + min/büyüt/kapat
+        // düğmeleri tamamen kaldırılır (yoksa görev çubuğunda WinUI caption düğmeleri görünür).
         ExtendsContentIntoTitleBar = true;
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.SetBorderAndTitleBar(false, false);
+            presenter.IsResizable = false;
+            presenter.IsMaximizable = false;
+            presenter.IsMinimizable = false;
+        }
 
         _hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
         _queue = DispatcherQueue.GetForCurrentThread();
