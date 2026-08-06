@@ -1,6 +1,8 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using CodexBridge.Core.Dashboard;
 using CodexBridge.JsHost;
+using CodexBridge.JsHost.Cookies;
 
 // Faz 5 fizibilite probu: üst akışın JS sağlayıcı eklentileri V8/ClearScript'te çalışıyor mu?
 // SAC dotnet run/test'i engellediğinden bu apphost exe olarak koşulur.
@@ -83,9 +85,24 @@ catch (Exception ex)
     Check("B: eşleme + prelude özellikleri", false, ex.Message);
 }
 
+// === TEST C: Faz 6 çerez şifre çözme (SENTETİK — gerçek çerezlere DOKUNMADAN) ===
+try
+{
+    byte[] key = RandomNumberGenerator.GetBytes(32);
+    byte[] enc = WindowsCookieStore.EncryptV10("session=abc123", key);
+    Check("C: v10 önek biçimi doğru", System.Text.Encoding.ASCII.GetString(enc, 0, 3) == "v10");
+    Check("C: AES-256-GCM round-trip (Chrome v10)", WindowsCookieStore.TryDecrypt(enc, key) == "session=abc123");
+    byte[] wrongKey = RandomNumberGenerator.GetBytes(32);
+    Check("C: yanlış anahtar → null (GCM auth)", WindowsCookieStore.TryDecrypt(enc, wrongKey) is null);
+}
+catch (Exception ex)
+{
+    Check("C: çerez şifre çözme", false, ex.Message);
+}
+
 Console.WriteLine();
 Console.WriteLine(failed == 0
-    ? "FAZ 5 FİZİBİLİTE: JS eklentileri V8/ClearScript'te ÇALIŞIYOR ✓"
+    ? "FAZ 5+6 FİZİBİLİTE: JS eklentileri V8'de ÇALIŞIYOR + çerez çözme doğrulandı ✓"
     : $"{failed} PROB BAŞARISIZ ✗");
 return failed == 0 ? 0 : 1;
 

@@ -51,9 +51,10 @@ dotnet build src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj -c Debug -p:Plat
 - ✅ Faz 3 — dashboard/v1 HTTP host, **curl ile uçtan uca doğrulandı** (401 fails-closed / 200)
 - ✅ Testler — self-test konsolu 22/22 geçiyor
 - 🧩 Faz 4 — iOS/Android widget iskeleleri yazıldı (ilgili araç zincirinde derlenir)
-- ✅ **Faz 5 — kendi sağlayıcı katmanı (ClearScript/V8): gerçek `xai.js` V8'de ÇALIŞTIRILDI** (11/11 prob)
-- ⏳ **Canlı çalışma testi (kullanıcı makine başında olunca):** band gerçekten çubukta
-  görünüyor mu, Explorer-restart hayatta kalma; telefon widget'larının cihazda derlenmesi
-- ⬜ Faz 6–7 — çerez katmanı (DPAPI), push bildirimi; JS eklentilerin canlı sağlayıcı entegrasyonu
+- ✅ **Faz 5 — kendi sağlayıcı katmanı (ClearScript/V8): gerçek `xai.js` V8'de ÇALIŞTIRILDI**
+- ✅ **Faz 6 — çerez katmanı (Chrome/Edge DPAPI + AES-GCM): kripto doğrulandı** (sentetik veri; 14/14 prob)
+- ⏳ **Canlı testler (kullanıcı makine başında olunca):** band çubukta görünüyor mu +
+  Explorer-restart; telefon cihazda derlenmesi; JS eklentilerin/çerezlerin GERÇEK sağlayıcıya bağlanması
+- ⬜ Faz 7 — push bildirimi (host → telefon); v20 app-bound çerez
 
 Ayrıntı: [docs/03-FAZ2-3-VE-TELEFON.md](docs/03-FAZ2-3-VE-TELEFON.md)

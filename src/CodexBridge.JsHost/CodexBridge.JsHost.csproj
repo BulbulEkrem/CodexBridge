@@ -12,6 +12,9 @@
     <!-- 15 hazır .js sağlayıcıyı V8'de çalıştırmak için ClearScript. -->
     <PackageReference Include="Microsoft.ClearScript.V8" Version="7.4.5" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.4.5" />
+    <!-- Faz 6: Chrome/Edge çerez çözme (DPAPI + SQLite). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
