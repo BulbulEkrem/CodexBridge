@@ -1,0 +1,12 @@
+# .NET build çıktıları
+bin/
+obj/
+*.user
+
+# Visual Studio / Rider
+.vs/
+.idea/
+
+# Yerel yayın
+publish/
+*.binlog

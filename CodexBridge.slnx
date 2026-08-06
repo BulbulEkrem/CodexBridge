@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CodexBridge.Core/CodexBridge.Core.csproj" />
+    <Project Path="src/CodexBridge.Host/CodexBridge.Host.csproj" />
+    <Project Path="src/CodexBridge.SelfTest/CodexBridge.SelfTest.csproj" />
+    <Project Path="src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj" />
+  </Folder>
+</Solution>
