@@ -1,0 +1,51 @@
+name: Android APK
+
+# Telefon widget'ının (phone/android) debug APK'sını bulutta derler ve artifact olarak yükler.
+# Tablet: GitHub → Actions → ilgili run → Artifacts → codexbridge-widget-debug-apk indir.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "phone/android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch: {}   # Actions sekmesinden elle tetikle
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phone/android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK (cmdline-tools + lisans)
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle 8.7 sağla
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      # Wrapper jar repoda yok; sağlanan Gradle 8.7 ile doğrudan derle.
+      - name: assembleDebug
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: APK'yı artifact olarak yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: codexbridge-widget-debug-apk
+          path: phone/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

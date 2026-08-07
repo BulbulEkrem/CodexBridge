@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CodexBridge</string>
+    <string name="widget_description">Sağlayıcı kotası ve veri yaşı</string>
+
+    <!-- Yapılandırma ekranı -->
+    <string name="config_title">Bağlantı ayarları</string>
+    <string name="host_url_label">Host adresi (ör. http://100.x.x.x:8765)</string>
+    <string name="host_url_hint">http://host:port</string>
+    <string name="token_label">Bearer token</string>
+    <string name="token_hint">Authorization: Bearer …</string>
+    <string name="save_button">Kaydet ve yenile</string>
+    <string name="saved_toast">Ayarlar kaydedildi, yenileme planlandı</string>
+    <string name="missing_host_toast">Host adresi gerekli</string>
+
+    <!-- Tanılama -->
+    <string name="diagnostics_title">Widget güncellenmiyor mu?</string>
+    <string name="diagnostics_body">Widget canlı gösterge değildir; en az 15 dakikada bir arka planda yenilenir ve her zaman verinin yaşını gösterir. Güncelleme durduysa şunları kontrol edin:\n\n• Data Saver (veri tasarrufu) açıkken arka plan ağ erişimi engellenir.\n• Üretici pil optimizasyonları (Xiaomi/Huawei/Samsung) periyodik işi öldürebilir.\n• Uygulama için arka plan verisi kısıtlı olabilir.</string>
+    <string name="open_battery_settings">Pil optimizasyonu ayarları</string>
+    <string name="open_data_settings">Veri kullanımı / Data Saver</string>
+    <string name="open_app_settings">Uygulama ayarları</string>
+
+    <string name="push_optional_note">Push bildirimleri opsiyoneldir ve yalnızca google-services.json eklendiğinde çalışır.</string>
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Glance AppWidget sağlayıcı meta verisi.
+  updatePeriodMillis = 0 → sistem otomatik yenileme YOK; yenileme WorkManager'a devredildi
+  (min 15 dk, resetAt'e hizalı). initialLayout Glance kütüphanesinin varsayılan yükleme
+  düzenidir (Glance ile özel layout XML gerekmez).
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="40dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:previewImage="@drawable/widget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_description" />

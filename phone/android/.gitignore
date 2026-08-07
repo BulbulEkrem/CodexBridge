@@ -1,0 +1,13 @@
+# Android / Gradle build çıktıları
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+captures/
+.cxx/
+
+# Gradle wrapper JAR'ı VERSİYONA DAHİLDİR (checkout'ta ilk derlemenin çalışması için).
+# Yanlışlıkla ignore edilmesin diye açıkça izin veriyoruz:
+!gradle/wrapper/gradle-wrapper.jar
