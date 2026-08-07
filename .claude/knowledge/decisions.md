@@ -26,6 +26,13 @@ Giriş formatı: `## YYYY-MM-DD — <aşama>` başlığıyla kısa maddeler.
 - **`HttpUsageSource`:** dashboard/v1 host'undan okuyan istemci — görev çubuğu "host'tan oku" modu + telefon + çok-makine birleştirmenin ortak çekirdeği. Çok-makine: maliyet toplanır, kota (aynı id) tekilleştirilir.
 - **Telefon:** iOS (WidgetKit, resetAt'e hizalı timeline) + Android (Glance+WorkManager, "veri yaşı") iskeleleri `phone/`. Derleme ilgili araç zincirinde (bu ortamda yok).
 
+## 2026-08-07 — Faz 7 (push bildirimi + v20 çerez, otonom)
+- **Mimari:** `NotificationEngine.Diff` (Core, saf) iki snapshot'tan eşik geçişlerini üretir → `PushNotificationService` (BackgroundService) tek yenileme noktasından (SnapshotCache) periyodik çeker, cooldown'lu fan-out yapar → `CompositePushDispatcher` cihaz platformuna göre APNs/FCM'e yönlendirir. Katman ayrımı: olay modeli+motor Core'da (platformsuz, test edilebilir), HTTP dispatcher'lar Host'ta.
+- **Push token güvenliği:** cihaz kayıtları yalnızca `%LOCALAPPDATA%\CodexBridge\devices.json`'da; snapshot'a/loga sızmaz (telefona maskeli snapshot gider, çerez/kimlik PC'de kalır ilkesiyle tutarlı). Kayıt uç noktaları bearer korumalı.
+- **APNs/FCM gerçek ama opsiyonel:** ES256 (APNs provider token, ~40dk cache) ve RS256→OAuth2 (FCM, ~55dk cache) tam implemente; kimlik bilgisi (env) yoksa loga düşer. Ağ yalnızca yapılandırılınca. Ölü cihaz (APNs 410 / FCM UNREGISTERED) otomatik kayıttan düşer.
+- **Kaynak seçimi bağlandı:** Host artık `--source fake|http` ile FakeUsageSource veya HttpUsageSource (başka dashboard/v1 host'undan oku) seçer; önceden FakeUsageSource'a sabitti.
+- **v20 app-bound çerez:** çözülen düz metnin ilk 32 baytı app-bound başlık → sıyrılır (`IsV20` ile sürüm ayrımı, ayrı app-bound anahtar). `AppBoundKeyProvider` `app_bound_encrypted_key`'i okuyup "APPB" önekini atar, kullanıcı DPAPI katmanını soyar. **SINIR:** SYSTEM DPAPI katmanı COM `IElevator` (SYSTEM bağlamı) gerektirir → otonom çözülmez, null döner, v10 etkilenmez.
+
 ## 2026-08-06 — Faz 5 (JS sağlayıcı katmanı, otonom, KANITLANDI)
 - **Araştırma #4 açık sorusu cevaplandı:** üst akışın `.js` sağlayıcıları JavaScriptCore'a bağlı DEĞİL — gerçek `xai.js` prelude ile **ClearScript/V8**'de çalıştırıldı, doğru çıktı (11/11 prob). "15 JS sağlayıcı bedava" bahsi doğrulandı.
 - **ClearScript gotcha:** `[ScriptMember("http")]` ile host nesnesi metotları `host.http is not a function` verdi. ÇÖZÜM: `host`'u JS tarafında kurup C# delegate'lerine bağla (`__hostHttp` vb.). Delegate yolu sağlam.

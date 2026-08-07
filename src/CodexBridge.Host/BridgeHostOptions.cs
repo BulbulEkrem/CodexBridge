@@ -18,6 +18,18 @@ public sealed class BridgeHostOptions
     /// <summary>SHA-256 digest of the bearer token, or null if unset.</summary>
     public byte[]? TokenDigest { get; private set; }
 
+    // --- Veri kaynağı seçimi (Faz 3 sahte → Faz 5 kendi JS katmanı → dashboard/v1 host'tan oku) ---
+    /// <summary>fake | http. http ise başka bir dashboard/v1 host'undan okur (çok-makine birleştirme).</summary>
+    public string SourceKind { get; init; } = "fake";
+    public string? SourceUrl { get; init; }
+    public string? SourceToken { get; init; }
+
+    // --- Faz 7 push ---
+    public bool PushEnabled { get; init; } = true;
+    /// <summary>Aynı olayın (dedupeKey) yeniden gönderilmeden önce beklemesi gereken süre.</summary>
+    public int PushCooldownMinutes { get; init; } = 30;
+    public string DevicesPath { get; init; } = "";
+
     public bool IsLoopback => IsLoopbackHost(Host);
     public bool HasToken => TokenDigest is not null;
 
@@ -43,6 +55,12 @@ public sealed class BridgeHostOptions
             Port = int.TryParse(Get("--port", "CODEXBRIDGE_PORT", "8787"), out var p) ? p : 8787,
             RefreshIntervalSeconds = int.TryParse(Get("--refresh-interval", "CODEXBRIDGE_REFRESH_INTERVAL", "60"), out var r) ? r : 60,
             AllowPlainHttp = Has("--allow-plain-http", "CODEXBRIDGE_ALLOW_PLAIN_HTTP"),
+            SourceKind = Get("--source", "CODEXBRIDGE_SOURCE", "fake").Trim().ToLowerInvariant(),
+            SourceUrl = Get("--source-url", "CODEXBRIDGE_SOURCE_URL", "").Trim() is { Length: > 0 } su ? su : null,
+            SourceToken = Get("--source-token", "CODEXBRIDGE_SOURCE_TOKEN", "").Trim() is { Length: > 0 } st ? st : null,
+            PushEnabled = Get("--push", "CODEXBRIDGE_PUSH_ENABLED", "true").Trim().ToLowerInvariant() is not ("0" or "false"),
+            PushCooldownMinutes = int.TryParse(Get("--push-cooldown", "CODEXBRIDGE_PUSH_COOLDOWN_MIN", "30"), out var pc) ? pc : 30,
+            DevicesPath = Get("--devices-path", "CODEXBRIDGE_DEVICES_PATH", Push.JsonFileDeviceRegistry.DefaultPath()),
         };
 
         // Token: CODEXBAR_DASHBOARD_TOKEN (üst akışla uyum) veya --dashboard-token.
@@ -57,6 +75,8 @@ public sealed class BridgeHostOptions
     public string? Validate()
     {
         if (Port is < 1 or > 65535) return "--port 1..65535 aralığında olmalı.";
+        if (SourceKind is not ("fake" or "http")) return "--source yalnızca fake | http olabilir.";
+        if (SourceKind == "http" && SourceUrl is null) return "http kaynağı için --source-url gerekli.";
         if (!IsLoopback)
         {
             if (!HasToken) return "Loopback dışı bind için token gerekli (CODEXBAR_DASHBOARD_TOKEN).";

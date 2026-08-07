@@ -94,6 +94,13 @@ try
     Check("C: AES-256-GCM round-trip (Chrome v10)", WindowsCookieStore.TryDecrypt(enc, key) == "session=abc123");
     byte[] wrongKey = RandomNumberGenerator.GetBytes(32);
     Check("C: yanlış anahtar → null (GCM auth)", WindowsCookieStore.TryDecrypt(enc, wrongKey) is null);
+
+    // v20 (app-bound): düz metin önünde 32 baytlık başlık var → çözüldükten sonra sıyrılmalı.
+    byte[] encV20 = WindowsCookieStore.EncryptV20("session=xyz789", key);
+    Check("C: v20 önek biçimi doğru", System.Text.Encoding.ASCII.GetString(encV20, 0, 3) == "v20");
+    Check("C: v20 IsV20 tespiti", WindowsCookieStore.IsV20(encV20) && !WindowsCookieStore.IsV20(enc));
+    Check("C: v20 app-bound 32 bayt başlık sıyrıldı", WindowsCookieStore.TryDecrypt(encV20, key) == "session=xyz789");
+    Check("C: v20 yanlış anahtar → null", WindowsCookieStore.TryDecrypt(encV20, wrongKey) is null);
 }
 catch (Exception ex)
 {
@@ -102,7 +109,7 @@ catch (Exception ex)
 
 Console.WriteLine();
 Console.WriteLine(failed == 0
-    ? "FAZ 5+6 FİZİBİLİTE: JS eklentileri V8'de ÇALIŞIYOR + çerez çözme doğrulandı ✓"
+    ? "FAZ 5+6 FİZİBİLİTE: JS eklentileri V8'de ÇALIŞIYOR + çerez çözme (v10+v20) doğrulandı ✓"
     : $"{failed} PROB BAŞARISIZ ✗");
 return failed == 0 ? 0 : 1;
 

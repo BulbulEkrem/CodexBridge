@@ -1,9 +1,15 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/CodexBridge.ClaudeData/CodexBridge.ClaudeData.csproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="src/CodexBridge.Core/CodexBridge.Core.csproj" />
     <Project Path="src/CodexBridge.Host/CodexBridge.Host.csproj" />
     <Project Path="src/CodexBridge.JsHost/CodexBridge.JsHost.csproj" />
     <Project Path="src/CodexBridge.JsProbe/CodexBridge.JsProbe.csproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="src/CodexBridge.RealData/CodexBridge.RealData.csproj">
       <Platform Project="x64" />
     </Project>
     <Project Path="src/CodexBridge.SelfTest/CodexBridge.SelfTest.csproj" />

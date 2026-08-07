@@ -1,4 +1,5 @@
 using CodexBridge.Core.Dashboard;
+using CodexBridge.Core.Notifications;
 using CodexBridge.Core.Refresh;
 using CodexBridge.Core.Sources;
 using CodexBridge.Core.Sources.WinCodexBar;
@@ -79,6 +80,50 @@ Check("map: weekly kind", rows[0].Windows[1].Kind == "weekly");
 Check("map: cost last30 = 18.22", rows[0].Cost?.Last30DaysUsd == 18.22);
 Check("map: hata satırı error taşır", rows[1].Error?.Message == "not configured");
 Check("map: hata satırı level unknown", rows[1].Status?.Level == StatusLevel.Unknown);
+
+// --- 4) NotificationEngine (Faz 7) — eşik geçişleri ---
+static DashboardSnapshot Snap(params ProviderRow[] providers) => new()
+{
+    GeneratedAt = DateTimeOffset.Parse("2026-08-07T12:00:00Z"),
+    Host = new HostInfo { RefreshIntervalSeconds = 60 },
+    Providers = providers,
+};
+static ProviderRow Prov(string id, double? used, string? error = null) => new()
+{
+    Id = id, Name = char.ToUpper(id[0]) + id[1..],
+    Status = new ProviderStatus { Level = StatusLevel.Ok },
+    Windows = used is { } u ? [ new RateWindow { Kind = "session", UsedPercent = u, RemainingPercent = 100 - u } ] : [],
+    Error = error is null ? null : new ProviderError { Message = error },
+};
+static IReadOnlyList<NotificationEvent> Diff(DashboardSnapshot? prev, DashboardSnapshot cur)
+    => NotificationEngine.Diff(prev, cur, NotificationThresholds.Default);
+
+Check("notif: ilk snapshot (prev=null) → olay yok", Diff(null, Snap(Prov("codex", 95))).Count == 0);
+
+var warnEv = Diff(Snap(Prov("codex", 60)), Snap(Prov("codex", 80)));
+Check("notif: 60→80 uyarı geçişi → 1 olay", warnEv.Count == 1);
+Check("notif: uyarı türü QuotaWarning", warnEv.Count == 1 && warnEv[0].Kind == NotificationKind.QuotaWarning);
+
+var critEv = Diff(Snap(Prov("codex", 80)), Snap(Prov("codex", 95)));
+Check("notif: 80→95 kritik geçişi → QuotaCritical", critEv.Count == 1 && critEv[0].Kind == NotificationKind.QuotaCritical);
+
+Check("notif: 95→96 yüksekte kalış → olay yok (kenar tetikleme)",
+    Diff(Snap(Prov("codex", 95)), Snap(Prov("codex", 96))).Count == 0);
+
+var resetEv = Diff(Snap(Prov("codex", 95)), Snap(Prov("codex", 10)));
+Check("notif: 95→10 sıfırlama → QuotaReset", resetEv.Count == 1 && resetEv[0].Kind == NotificationKind.QuotaReset);
+
+var errEv = Diff(Snap(Prov("codex", 30)), Snap(Prov("codex", 30, error: "boom")));
+Check("notif: sağlıklı→hata → ProviderError", errEv.Count == 1 && errEv[0].Kind == NotificationKind.ProviderError);
+
+var recEv = Diff(Snap(Prov("codex", 30, error: "boom")), Snap(Prov("codex", 30)));
+Check("notif: hata→sağlıklı → ProviderRecovered", recEv.Count == 1 && recEv[0].Kind == NotificationKind.ProviderRecovered);
+
+Check("notif: dedupeKey uyarı≠kritik (ikisi de gönderilebilsin)",
+    warnEv[0].DedupeKey != critEv[0].DedupeKey);
+
+Check("notif: kritik geçiş 60→95 tek olay (uyarı gölgelenir)",
+    Diff(Snap(Prov("codex", 60)), Snap(Prov("codex", 95))).Count == 1);
 
 Console.WriteLine();
 Console.WriteLine(failed == 0 ? "TÜM TESTLER GEÇTI ✓" : $"{failed} TEST BAŞARISIZ ✗");

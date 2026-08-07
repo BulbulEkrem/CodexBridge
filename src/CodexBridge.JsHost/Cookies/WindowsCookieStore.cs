@@ -16,12 +16,17 @@ namespace CodexBridge.JsHost.Cookies;
 /// </summary>
 public sealed class WindowsCookieStore
 {
-    private readonly byte[] _key;
+    /// <summary>v20 (app-bound) çözülen düz metin, gerçek değerden önce 32 baytlık başlık taşır.</summary>
+    public const int AppBoundPrefixLength = 32;
+
+    private readonly byte[] _key;          // v10 os_crypt DPAPI anahtarı
+    private readonly byte[]? _appBoundKey; // v20 app-bound anahtarı (varsa)
     private readonly string _cookiesDbPath;
 
-    private WindowsCookieStore(byte[] key, string cookiesDbPath)
+    private WindowsCookieStore(byte[] key, byte[]? appBoundKey, string cookiesDbPath)
     {
         _key = key;
+        _appBoundKey = appBoundKey;
         _cookiesDbPath = cookiesDbPath;
     }
 
@@ -35,9 +40,11 @@ public sealed class WindowsCookieStore
             BrowserKind.Edge => Path.Combine(local, "Microsoft", "Edge", "User Data"),
             _ => throw new ArgumentOutOfRangeException(nameof(browser)),
         };
-        byte[] key = LoadAesKey(Path.Combine(root, "Local State"));
+        string localState = Path.Combine(root, "Local State");
+        byte[] key = LoadAesKey(localState);
+        byte[]? appBound = AppBoundKeyProvider.TryLoad(localState); // v20; çözülemezse null (COM elevator sınırı)
         string cookies = Path.Combine(root, profile ?? "Default", "Network", "Cookies");
-        return new WindowsCookieStore(key, cookies);
+        return new WindowsCookieStore(key, appBound, cookies);
     }
 
     /// <summary>Bir alan adı için <c>name=value; ...</c> çerez başlığı üretir (eşleşen çerezler).</summary>
@@ -57,7 +64,10 @@ public sealed class WindowsCookieStore
         {
             string name = reader.GetString(0);
             byte[] enc = (byte[])reader[1];
-            string? value = TryDecrypt(enc, _key);
+            // Sürüme göre anahtar seç: v20 (app-bound) ayrı anahtar ister; yoksa çözülemez atlanır.
+            byte[]? key = IsV20(enc) ? _appBoundKey : _key;
+            if (key is null) continue;
+            string? value = TryDecrypt(enc, key);
             if (value is not null) pairs.Add($"{name}={value}");
         }
         return string.Join("; ", pairs);
@@ -74,15 +84,22 @@ public sealed class WindowsCookieStore
         return ProtectedData.Unprotect(dpapiBlob, null, DataProtectionScope.CurrentUser);
     }
 
+    /// <summary>Şifreli değer v20 (app-bound) önekiyle mi başlıyor.</summary>
+    public static bool IsV20(byte[] encrypted)
+        => encrypted.Length >= 3 && encrypted[0] == (byte)'v' && encrypted[1] == (byte)'2' && encrypted[2] == (byte)'0';
+
     /// <summary>
     /// v10/v20 AES-256-GCM çerez değerini çözer. Test edilebilir saf fonksiyon.
     /// Biçim: [3 bayt önek "v10"/"v20"][12 bayt nonce][şifreli metin][16 bayt tag].
+    /// v20'de <paramref name="key"/> app-bound anahtar olmalı; çözülen düz metnin ilk
+    /// <see cref="AppBoundPrefixLength"/> baytı app-bound başlıktır ve atılır.
     /// </summary>
     public static string? TryDecrypt(byte[] encrypted, byte[] key)
     {
         if (encrypted.Length < 3 + 12 + 16) return null;
         string prefix = Encoding.ASCII.GetString(encrypted, 0, 3);
         if (prefix is not ("v10" or "v20")) return null;
+        bool appBound = prefix == "v20";
 
         ReadOnlySpan<byte> span = encrypted;
         ReadOnlySpan<byte> nonce = span.Slice(3, 12);
@@ -94,13 +111,19 @@ public sealed class WindowsCookieStore
         {
             using var gcm = new AesGcm(key, 16);
             gcm.Decrypt(nonce, cipher, tag, plain);
-            // v20 (app-bound) ek olarak 32 baytlık bir başlık taşıyabilir; varsa atla.
-            return Encoding.UTF8.GetString(plain);
         }
         catch (CryptographicException)
         {
             return null;
         }
+
+        // v20 (app-bound): düz metin [32 bayt başlık][gerçek değer]. Başlığı sıyır.
+        if (appBound)
+        {
+            if (plain.Length < AppBoundPrefixLength) return null;
+            return Encoding.UTF8.GetString(plain, AppBoundPrefixLength, plain.Length - AppBoundPrefixLength);
+        }
+        return Encoding.UTF8.GetString(plain);
     }
 
     /// <summary>
@@ -118,6 +141,30 @@ public sealed class WindowsCookieStore
 
         byte[] outp = new byte[3 + 12 + cipher.Length + 16];
         Encoding.ASCII.GetBytes("v10").CopyTo(outp, 0);
+        nonce.CopyTo(outp, 3);
+        cipher.CopyTo(outp, 15);
+        tag.CopyTo(outp, 15 + cipher.Length);
+        return outp;
+    }
+
+    /// <summary>
+    /// Test yardımcı: bir düz metni Chrome v20 (app-bound) biçiminde şifreler — düz metnin önüne
+    /// 32 baytlık app-bound başlık eklenir. v20 çözme + başlık sıyırma yolunu doğrulamak için.
+    /// </summary>
+    public static byte[] EncryptV20(string value, byte[] key)
+    {
+        byte[] prefixed = new byte[AppBoundPrefixLength + Encoding.UTF8.GetByteCount(value)];
+        RandomNumberGenerator.Fill(prefixed.AsSpan(0, AppBoundPrefixLength));
+        Encoding.UTF8.GetBytes(value).CopyTo(prefixed, AppBoundPrefixLength);
+
+        byte[] nonce = RandomNumberGenerator.GetBytes(12);
+        byte[] cipher = new byte[prefixed.Length];
+        byte[] tag = new byte[16];
+        using var gcm = new AesGcm(key, 16);
+        gcm.Encrypt(nonce, prefixed, cipher, tag);
+
+        byte[] outp = new byte[3 + 12 + cipher.Length + 16];
+        Encoding.ASCII.GetBytes("v20").CopyTo(outp, 0);
         nonce.CopyTo(outp, 3);
         cipher.CopyTo(outp, 15);
         tag.CopyTo(outp, 15 + cipher.Length);
