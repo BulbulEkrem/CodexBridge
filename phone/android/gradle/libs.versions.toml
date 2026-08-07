@@ -8,7 +8,7 @@ appcompat = "1.7.0"
 glance = "1.1.0"
 work = "2.9.1"
 datastore = "1.1.1"
-serializationJson = "1.7.3"
+serializationJson = "1.6.3"   # Kotlin 1.9.24 ile uyumlu (1.7.x Kotlin 2.0+ ister); Ktor 2.3.x de 1.6.x serisi kullanır
 ktor = "2.3.12"
 coroutines = "1.8.1"
 
