@@ -1,6 +1,7 @@
 using CodexBridge.Core;
 using CodexBridge.Core.Providers;
 using CodexBridge.Core.Refresh;
+using CodexBridge.Core.Rendering;
 using CodexBridge.Core.Security;
 using CodexBridge.Core.Settings;
 using CodexBridge.Core.Dashboard;
@@ -434,6 +435,72 @@ Check("koordinatör: snapshot diske yazılıyor", coordStore.Read()?.Providers.C
 Check("koordinatör: yenileme aralığı snapshot'a yazılıyor",
     coordSnap.Host.RefreshIntervalSeconds == 300);
 Check("koordinatör: Current güncelleniyor", coord.Current is not null);
+
+// --- Tepsi ikonu çizimi ---
+// Yerleşim: kenar payı 3, çubuk payı 4 → çubuklar x=7..25. İki çubuk dikey ortada:
+// oturum y=7..14, haftalık y=18..25. Üst çubuğun oturum olması band'la tutarlılık için şart.
+byte[] icon = TrayIconRenderer.Render(100, 0, MeterLevel.Ok, MeterLevel.Ok);
+Check("ikon: 32x32 BGRA bayt uzunluğu", icon.Length == 32 * 32 * 4);
+Check("ikon: köşe şeffaf (kenar payı)", TrayIconRenderer.PixelAt(icon, 0, 0).A == 0);
+Check("ikon: kart opak", TrayIconRenderer.PixelAt(icon, 16, 4).A == 0xFF);
+
+var topFill = TrayIconRenderer.PixelAt(icon, 24, 10);
+Check("ikon: ÜST çubuk oturum (%100 → sağ uca kadar dolu)",
+    (topFill.B, topFill.G, topFill.R) == (0x5F, 0xCB, 0x6C));
+var bottomTrack = TrayIconRenderer.PixelAt(icon, 24, 21);
+Check("ikon: ALT çubuk haftalık (%0 → yatak rengi)",
+    (bottomTrack.B, bottomTrack.G, bottomTrack.R) == (0x50, 0x50, 0x5A));
+Check("ikon: %0 bile 1 piksel çiziliyor (veri yok'tan ayırt edilsin)",
+    TrayIconRenderer.PixelAt(icon, 7, 21).B == 0x5F);
+
+byte[] critIcon = TrayIconRenderer.Render(95, 95, MeterLevel.Crit, MeterLevel.Crit);
+var critPx = TrayIconRenderer.PixelAt(critIcon, 20, 10);
+Check("ikon: kritik renk kırmızı", (critPx.B, critPx.G, critPx.R) == (0x5B, 0x5B, 0xFF));
+
+byte[] noData = TrayIconRenderer.Render(null, null, MeterLevel.Unknown, MeterLevel.Unknown);
+Check("ikon: veri yoksa çubuk boş kalıyor",
+    TrayIconRenderer.PixelAt(noData, 7, 10).B == 0x50);
+
+byte[] dimmed = TrayIconRenderer.Render(50, 50, MeterLevel.Ok, MeterLevel.Ok, dimmed: true);
+Check("ikon: bayat veri soluk çiziliyor", TrayIconRenderer.PixelAt(dimmed, 16, 4).A == 0xB4);
+
+Check("ikon seviyesi: %50 → Ok", TrayIconRenderer.LevelFor(50, 75, 90) == MeterLevel.Ok);
+Check("ikon seviyesi: %80 → Warn", TrayIconRenderer.LevelFor(80, 75, 90) == MeterLevel.Warn);
+Check("ikon seviyesi: %95 → Crit", TrayIconRenderer.LevelFor(95, 75, 90) == MeterLevel.Crit);
+Check("ikon seviyesi: null → Unknown", TrayIconRenderer.LevelFor(null, 75, 90) == MeterLevel.Unknown);
+
+// --- Tepsi araç ipucu (128 karakter sınırı) ---
+var tipSettings = new AppSettings().Normalized();
+Check("ipucu: snapshot yoksa açıklayıcı metin",
+    TrayTooltip.Build(null, tipSettings, t0).Contains("henüz veri yok"));
+
+var tipSnapshot = new DashboardSnapshot
+{
+    GeneratedAt = t0,
+    Host = new HostInfo { CodexBarVersion = "t", RefreshIntervalSeconds = 120 },
+    Providers =
+    [
+        ProviderRowFactory.Create(ProviderIds.Claude, "oauth",
+            [RateWindowFactory.Create(WindowKinds.Session, "Oturum", 47, t0.AddHours(3)),
+             RateWindowFactory.Create(WindowKinds.Weekly, "Haftalık", 78, t0.AddDays(3))], t0),
+        ProviderRowFactory.Create(ProviderIds.Codex, "oauth",
+            [RateWindowFactory.Create(WindowKinds.Session, "Oturum", 18, t0.AddHours(4)),
+             RateWindowFactory.Create(WindowKinds.Weekly, "Haftalık", 91, t0.AddDays(1))], t0),
+    ],
+};
+
+string tip = TrayTooltip.Build(tipSnapshot, tipSettings, t0);
+Check("ipucu: 128 karakter sınırına uyuyor", tip.Length <= TrayTooltip.MaxLength);
+Check("ipucu: en kısıtlayıcı sağlayıcı ilk sırada", tip.StartsWith("Codex"));
+Check("ipucu: satırlar \\r\\n ile ayrılıyor", tip.Contains("\r\n"));
+Check("ipucu: yüzde ve geri sayım var", tip.Contains("%91") && tip.Contains("1g"));
+
+// Uzun içerik sınırı aşmamalı: yapay olarak çok sağlayıcılı bir snapshot kur.
+var manyRows = Enumerable.Range(0, 8).Select(i =>
+    ProviderRowFactory.Create(ProviderIds.Claude, "oauth",
+        [RateWindowFactory.Create(WindowKinds.Weekly, "Haftalık", 50 + i, t0.AddDays(3))], t0)).ToList();
+string longTip = TrayTooltip.Build(tipSnapshot with { Providers = manyRows }, tipSettings, t0);
+Check("ipucu: taşan satırlar atılıyor, sınır korunuyor", longTip.Length <= TrayTooltip.MaxLength);
 
 // Temizlik
 AppPaths.OverrideRoot(null);

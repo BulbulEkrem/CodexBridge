@@ -40,6 +40,7 @@ public sealed class RefreshCoordinator(
     TimeProvider? clock = null)
 {
     private readonly IRefreshSignals _signals = signals ?? NoRefreshSignals.Instance;
+    private volatile IUsageSource _source = source;
     private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     private readonly SemaphoreSlim _wake = new(0, 1);
     private readonly SemaphoreSlim _fetchGate = new(1, 1);
@@ -51,6 +52,10 @@ public sealed class RefreshCoordinator(
 
     /// <summary>Her başarılı yenilemede tetiklenir. Yüzeyler buna abone olur.</summary>
     public event Action<DashboardSnapshot>? Updated;
+
+    /// <summary>Veri kaynağını değiştirir. Ayarlar penceresinde sağlayıcı listesi değişince
+    /// çağrılır; döngü durdurulmadan yeni kaynağa geçilir.</summary>
+    public void ReplaceSource(IUsageSource replacement) => _source = replacement;
 
     /// <summary>Kullanıcı yüzeyle etkileşti (band'a tıkladı, önizlemeye baktı, ayarları açtı).
     /// Bir sonraki yenileme aralığını kısaltır.</summary>
@@ -86,7 +91,7 @@ public sealed class RefreshCoordinator(
         await _fetchGate.WaitAsync(ct);
         try
         {
-            var snapshot = await source.GetSnapshotAsync(ct);
+            var snapshot = await _source.GetSnapshotAsync(ct);
             snapshot = snapshot with
             {
                 Host = snapshot.Host with { RefreshIntervalSeconds = (int)NextDelay().TotalSeconds },
