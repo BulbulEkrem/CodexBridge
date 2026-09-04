@@ -200,6 +200,26 @@ Check("saat geri sayımı: geçmiş → '0:00'",
 Check("saat geri sayımı: reset yoksa null (segment atlanır)",
     RateWindowFactory.FormatClockCountdown(null, t0) is null);
 
+// --- Yüzen HUD'ın pencere satırı geri sayımı: 1S:52D / 3G:12S:32D ---
+Check("HUD geri sayımı: 1sa 52dk → '1S:52D'",
+    RateWindowFactory.FormatWindowCountdown(t0.AddHours(1).AddMinutes(52), t0) == "1S:52D");
+Check("HUD geri sayımı: 3g 12sa 32dk → '3G:12S:32D'",
+    RateWindowFactory.FormatWindowCountdown(t0.AddDays(3).AddHours(12).AddMinutes(32), t0) == "3G:12S:32D");
+Check("HUD geri sayımı: gün yoksa gün alanı hiç yazılmıyor",
+    RateWindowFactory.FormatWindowCountdown(t0.AddHours(2), t0) == "2S:00D");
+Check("HUD geri sayımı: saat alanı gün yokken de duruyor ('23D' belirsizliği önlenir)",
+    RateWindowFactory.FormatWindowCountdown(t0.AddMinutes(23), t0) == "0S:23D");
+Check("HUD geri sayımı: dakika iki hane",
+    RateWindowFactory.FormatWindowCountdown(t0.AddHours(4).AddMinutes(5), t0) == "4S:05D");
+Check("HUD geri sayımı: saniyeler yukarı yuvarlanıyor",
+    RateWindowFactory.FormatWindowCountdown(t0.AddMinutes(9).AddSeconds(30), t0) == "0S:10D");
+Check("HUD geri sayımı: tam gün sınırı → '1G:0S:00D'",
+    RateWindowFactory.FormatWindowCountdown(t0.AddDays(1), t0) == "1G:0S:00D");
+Check("HUD geri sayımı: geçmiş → '0S:00D'",
+    RateWindowFactory.FormatWindowCountdown(t0.AddMinutes(-5), t0) == "0S:00D");
+Check("HUD geri sayımı: reset yoksa null",
+    RateWindowFactory.FormatWindowCountdown(null, t0) is null);
+
 // --- En kısıtlayıcı pencere: band'ın pill rengini belirleyen kural ---
 var twoWindows = new List<CodexBridge.Core.Dashboard.RateWindow>
 {

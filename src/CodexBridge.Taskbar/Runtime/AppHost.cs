@@ -50,6 +50,20 @@ public sealed class AppHost : IDisposable
 
     /// <summary>Ayarlar penceresi kaydettiğinde çağrılır: sağlayıcı listesi değişmiş olabilir,
     /// kaynakları yeniden kurup hemen bir yenileme iste.</summary>
+    /// <summary>
+    /// HUD'ın sürüklendiği konumu kaydeder.
+    ///
+    /// <para>Diskteki dosya yeniden okunup üzerine yazılıyor: ayarlar penceresi açıkken
+    /// kaydetmiş olabilir, bellekteki kopyayı körlemesine yazsaydık onun değişikliklerini
+    /// ezerdik. Bellekteki kopya da güncelleniyor ki sonraki kaydetme konumu kaybetmesin.</para>
+    /// </summary>
+    public void UpdateHudPosition(int left, int top)
+    {
+        var onDisk = AppSettings.Load() with { HudLeft = left, HudTop = top };
+        onDisk.Save();
+        Settings = Settings with { HudLeft = left, HudTop = top };
+    }
+
     public void ReloadSettings()
     {
         Settings = AppSettings.Load();

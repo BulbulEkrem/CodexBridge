@@ -22,7 +22,7 @@ katmanına iki yeni yüz takar.
 | 06 | [Faz 7 — Push Bildirimi + v20 app-bound](docs/06-FAZ7-PUSH-BILDIRIMI.md) |
 | 08 | [Win-CodexBar Analiz Raporu — Özellik Kaynağı](docs/08-WIN-CODEXBAR-ANALIZ-RAPORU.md) |
 | 09 | [Windows Yüzey Araştırması — Bildirim / Görev Çubuğu / Start](docs/09-WINDOWS-YUZEY-ARASTIRMASI.md) |
-| 10 | [Yüzen Ambient HUD — Tasarım Önerileri](docs/10-YUZEN-AMBIENT-HUD-ONERILERI.md) *(öneri, onaylanmadı)* |
+| 10 | [Yüzen Ambient HUD — Tasarım Önerileri](docs/10-YUZEN-AMBIENT-HUD-ONERILERI.md) *(D4 uygulandı)* |
 
 ## Yapı
 
@@ -31,7 +31,8 @@ src/CodexBridge.Core/      platformsuz: dashboard/v1 modelleri, AdaptiveRefresh,
                            FakeUsageSource, HttpUsageSource, WinCodexBarSource (Faz 2 adaptörü)
 src/CodexBridge.Host/      dashboard/v1 HTTP host (ASP.NET Core) — telefon buraya bağlanır;
                            Faz 7 push (cihaz kaydı + APNs/FCM dispatcher + eşik servisi)
-src/CodexBridge.Taskbar/   WinUI 3 görev çubuğu yüzeyi + parent'lama + Explorer-restart gözcüsü
+src/CodexBridge.Taskbar/   WinUI 3 görev çubuğu yüzeyi + parent'lama + Explorer-restart gözcüsü;
+                           Hud/ = yüzen ambient HUD (her zaman üstte, sürüklenebilir)
 src/CodexBridge.JsHost/    Faz 5: ClearScript/V8 ile üst akışın .js sağlayıcılarını çalıştırma
 src/CodexBridge.SelfTest/  Core assertion konsolu (SAC dotnet test'i engellediği için)
 src/CodexBridge.Widget/    Windows Widget sağlayıcısı (Adaptive Cards; paketli COM sunucusu)
@@ -85,7 +86,7 @@ Get-AppxPackage | Where-Object { $_.Name -like "*Singleton*" }
 - Bir sağlayıcının hatası diğerini düşürmüyor; son bilinen değer korunuyor ve
   `updatedAt` bilerek eskide bırakılıyor ki yüzeyler "veri yaşı"nı dürüstçe göstersin.
 - Tek yenileme noktası (`RefreshCoordinator`) + atomik `snapshot.json`.
-- **SelfTest: 147 assertion, tümü geçiyor.**
+- **SelfTest: 171 assertion, tümü geçiyor.**
 
 ### Windows yüzeyleri (2026-09-04'te gerçek makinede derlendi ve çalıştırıldı ✓)
 - **Görev çubuğu bandı** ✅ — B varyantı: sağlayıcı başına tek pill, içinde iki çubuk
@@ -99,16 +100,13 @@ Get-AppxPackage | Where-Object { $_.Name -like "*Singleton*" }
   = en kısıtlayıcı pencere, diğer pencere durum satırında, geri sayım çubuğun sağında.
   **Windows App Runtime gerektiriyor** (bkz. Derleme).
 - **Ayarlar penceresi** ⏳ — yazıldı, canlı açılıp kaydetmesi doğrulandı ama gözden geçirilmedi.
+- **Yüzen ambient HUD** ✅ — görev çubuğunun üstünde duran, sürüklenebilir, her zaman üstte
+  pencere. Saatlik ve haftalık ayrı satırlarda (yüzde + `1S:52D` geri sayımı + tam genişlik
+  bar), resmî marka logolarıyla. Konum hatırlanıyor; Alt-Tab ve görev çubuğu düğmesi yok.
+  Band'dan bağımsız, ayarlardan kapatılabilir. Bkz. [10](docs/10-YUZEN-AMBIENT-HUD-ONERILERI.md).
 - **Widget sağlayıcısı** ⏳ — Adaptive Cards içeriği Core'da ve test edilmiş; COM host'u ve
   sparse package manifest'i yazıldı, **paketleme Windows'ta tamamlanmalı**.
 
-### Bilinen açık hata
-- **Son bilinen değer yeniden başlatmada kayboluyor.** `AggregateUsageSource._lastGood`
-  yalnızca nesne ömrü boyunca yaşıyor; `AppHost` diskteki snapshot'ı yüzeylere gönderiyor
-  ama bu sözlüğe beslemiyor, ve `ReloadSettings()` sözlüğü sıfırlıyor. Süreç yeniden
-  başladıktan veya ayarlar kaydedildikten sonra ilk çekim hata verirse pill `—` gösteriyor
-  ve boş satır diskteki iyi snapshot'ın üzerine yazılıyor. Aşağıdaki "son bilinen değer
-  korunuyor" vaadi bu iki durumda tutmuyor.
 
 ### Önceki fazlar
 - ✅ Faz 0/1 — görev çubuğu tekniği + Explorer-restart gözcüsü, kullanıcı makinesinde canlı doğrulandı

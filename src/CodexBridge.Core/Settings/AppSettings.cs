@@ -34,6 +34,20 @@ public sealed record AppSettings
     [JsonPropertyName("trayIconEnabled")]
     public bool TrayIconEnabled { get; init; } = true;
 
+    /// <summary>Yüzen ambient HUD gösterilsin mi. Band'dan bağımsız; ikisi aynı anda açık
+    /// olabilir (aynı bilgiyi iki yerde gösterirler).</summary>
+    [JsonPropertyName("hudEnabled")]
+    public bool HudEnabled { get; init; } = true;
+
+    /// <summary>HUD'ın sol kenarının ekran koordinatı. <c>null</c> ise ilk açılışta sağ alta
+    /// yerleşir. Kullanıcı pencereyi sürükleyince yazılır.</summary>
+    [JsonPropertyName("hudLeft")]
+    public int? HudLeft { get; init; }
+
+    /// <summary>HUD'ın üst kenarının ekran koordinatı.</summary>
+    [JsonPropertyName("hudTop")]
+    public int? HudTop { get; init; }
+
     [JsonPropertyName("startAtLogin")]
     public bool StartAtLogin { get; init; }
 

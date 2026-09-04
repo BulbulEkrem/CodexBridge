@@ -47,6 +47,38 @@ public static class RateWindowFactory
         return $"{totalMinutes / 60}:{totalMinutes % 60:D2}";
     }
 
+    /// <summary>
+    /// Yüzen HUD'ın pencere satırı için geri sayım: <c>1S:52D</c>, <c>3G:12S:32D</c>, <c>0S:23D</c>.
+    ///
+    /// <para><b>Gün alanı yalnızca gerçekten gün varsa yazılıyor.</b> Saatlik pencerede
+    /// <c>0G:1S:52D</c> yazmak satırın üçte birini sıfıra harcardı. Buna karşılık <b>saat alanı
+    /// her zaman var</b>: 23 dakika kalmışken tek başına <c>23D</c> yazsaydık, <c>G</c> gün
+    /// demek olduğu için okuyan bir an "23 gün mü?" diye duraksardı. <c>0S:23D</c> bu
+    /// belirsizliği kaldırıyor.</para>
+    ///
+    /// <para>Dakika daima iki hane, saat gün varken olduğu gibi bırakılıyor — iki pencere satırı
+    /// alt alta dururken rakamların hizada kalması için (yüzey tabular rakam kullanıyor).</para>
+    ///
+    /// <para>Sıfırlanma zamanı bilinmiyorsa <c>null</c>; çağıran satırı çizmemeli.</para>
+    /// </summary>
+    public static string? FormatWindowCountdown(DateTimeOffset? resetAt, DateTimeOffset now)
+    {
+        if (resetAt is not { } reset) return null;
+
+        var left = reset - now;
+        if (left <= TimeSpan.Zero) return "0S:00D";
+
+        // Saniyeler yukarı yuvarlanıyor: kalan süreyi olduğundan az göstermemek için.
+        long totalMinutes = (long)Math.Ceiling(left.TotalMinutes);
+        long days = totalMinutes / 1440;
+        long hours = totalMinutes % 1440 / 60;
+        long minutes = totalMinutes % 60;
+
+        return days > 0
+            ? $"{days}G:{hours}S:{minutes:D2}D"
+            : $"{hours}S:{minutes:D2}D";
+    }
+
     /// <summary>Süreyi kısa Türkçe geri sayıma çevirir: <c>2s 58dk</c>, <c>3g 4sa</c>, <c>12dk</c>.</summary>
     public static string? FormatCountdown(DateTimeOffset? resetAt, DateTimeOffset now)
     {

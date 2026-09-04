@@ -182,3 +182,60 @@ Aşağıdakilerin tamamı gerçek makinede, gerçek OAuth kimlikleriyle gözlend
 - **Pill genişliği 104 → 130.** Kullanıcıya "band genişliği değişmez" denmişti, YANLIŞTI: uzayan
   satır 104 dip'e sığmadı ve çubuklar sağdan kırpıldı (canlı testte görüldü). 130, en uzun makul
   satırı (`100 · 100 · 26:04`) artı çubukları alıyor. Band 220 → 272 dip; çubukta ~685px boşluk var.
+
+## 2026-09-04 — Yüzen ambient HUD (D4) uygulandı
+
+Öneri belgesindeki D4 yerleşimi seçildi ve yazıldı. `docs/10-YUZEN-AMBIENT-HUD-ONERILERI.md`
+artık yalnızca öneri değil; D4 gerçeklendi, diğer üçü hâlâ öneri.
+
+- **Neden ayrı pencere, neden band'a eklenmedi:** D4 iki pencere satırı + tam genişlik barlarla
+  76 dip yükseklik istiyor, görev çubuğu 48 px. Çubuğa fiziksel olarak sığmıyor. Band olduğu
+  gibi duruyor; HUD `hudEnabled` ile bağımsız açılıp kapanıyor, ikisi aynı anda açık olabilir.
+- **Ekranı ayırmıyor:** AppBar (`SHAppBarMessage`) çalışma alanını rezerve edip pencereleri
+  iter; bu sıradan bir top-level pencere. `WS_EX_TOPMOST` + `WS_EX_TOOLWINDOW`, `WS_EX_APPWINDOW`
+  sıyrılıyor (Alt-Tab ve görev çubuğu düğmesi yok).
+- **Marka rengi logoda, dolgu rengi durumda.** Band'da pill dolgusu sağlayıcının rengini
+  taşıyor ve durum yalnızca ince çubuklardan okunuyor. HUD'da logo markayı taşıdığı için dolgu
+  serbest kaldı: eşiği geçen pill'in tamamı sararıyor, kritikte kızarıyor.
+- **Geri sayım biçimi `1S:52D` / `3G:12S:32D`.** Gün alanı yalnızca gün varsa; saatlik pencerede
+  `0G:` yazmak satırın üçte birini sıfıra harcardı. Saat alanı ise HER ZAMAN var: `23D` tek
+  başına yazılsaydı `G` gün demek olduğu için okuyan "23 gün mü?" diye duraksardı.
+
+### Üç çökme, üçü de canlı testte bulundu
+
+- **SVG path → `Geometry` çevrimi süreci ÖLDÜRÜYOR.** İlk yaklaşım marka path verisini
+  `XamlBindingHelper.ConvertValue(typeof(Geometry), ...)` ile çevirmekti. XAML'in path söz
+  dizimi SVG'ninkiyle aynı DEĞİL; çevrim `E_INVALIDARG` veriyor ve hata **yönetilen `catch`'e
+  hiç uğramadan** fail-fast ile süreci düşürüyor (0xc000027b, `combase.dll`). Çözüm:
+  `SvgImageSource` — gerçek SVG ayrıştırıcısı, veriyi olduğu gibi alıyor. Renk fırçayla
+  verilemediği için SVG metnine gömülüyor (sağlayıcı başına tek renk, sorun değil).
+- **`ExtendsContentIntoTitleBar = true` pointer girdisini yutuyor.** Sürükleme için
+  `WM_NCHITTEST` → `HTCAPTION` kuruldu; pencere hiç kımıldamadı, çünkü fare girdisi XAML
+  adasında tüketiliyor ve üst-seviye pencerenin isabet testine ulaşmıyor. Özellik kaldırılınca
+  `PointerPressed/Moved/Released` çalıştı ve sürükleme oturdu.
+  **ŞÜPHE:** `MainWindow`'da da `ExtendsContentIntoTitleBar = true` var ve `Bands.PointerPressed`
+  bağlı — band'a tıklamanın yenilemeyi hızlandırması muhtemelen hiç çalışmıyor. **Sınanmadı.**
+- **`DisplayArea.FindAll()` pencere gösterilmeden çağrılınca çöküyor.** Kaydedilmiş HUD konumunun
+  hâlâ görünür olup olmadığını sınamak için kullanılıyordu; kaydedilmiş konumla açılan İLK
+  çalıştırmada `Microsoft.UI.Xaml.dll` içinde fail-fast. Çözüm: sanal ekran ölçüleri
+  (`GetSystemMetrics(SM_*VIRTUALSCREEN)`) — aynı soruyu WinUI'a hiç girmeden cevaplıyor.
+  `Place()` gövdesi ayrıca komple korumalı: yerleştirme patlarsa pencere WinUI'ın verdiği yerde
+  kalır, hiç açılmamasındansa yanlış köşede açılması yeğdir.
+
+### Uç noktalardan gerçekten ne geliyor (canlı sorgulandı)
+
+- **Token sayısı YOK.** Ne `api.anthropic.com/api/oauth/usage` ne `chatgpt.com/backend-api/wham/usage`
+  girdi/çıktı token'ı döndürüyor; ikisi de kotayı yalnızca yüzde veriyor.
+- **Kredi/harcama VAR ama bugün boş:** Claude `spend.used`/`spend.limit` gerçek para birimiyle
+  ($0.00 / $2000.00), `extra_usage.used_credits`; Codex `credits.balance`,
+  `credits.approx_local_messages`. Sıfırdan büyük tek anlamlı değer Codex'in
+  `rate_limit_reset_credits.available_count` = 2 (sınırı sıfırlama kredisi).
+- Kullanmadığımız hazır alanlar: Claude `limits[].severity` kendi ciddiyet kararını veriyor
+  (bizim %75/%90 eşiklerimize alternatif), ve `seven_day_opus`/`seven_day_sonnet` gibi
+  model-bazlı pencereler şemada duruyor (bu planda null).
+
+### Açıklanamayan tek seferlik gözlem
+
+- Bir kez `settings.json`'a `notificationsEnabled: false` yazıldı; varsayılan `true` ve ayarlar
+  penceresi açılmamıştı. Temiz durumdan tekrarlandığında `true` çıktı, **tekrarlanmadı.**
+  Bildirimler ileride sessizce susarsa buraya bakılmalı.

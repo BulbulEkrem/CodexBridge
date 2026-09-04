@@ -33,6 +33,30 @@ internal static partial class NativeMethods
     internal const int WS_EX_TOOLWINDOW = 0x00000080; // görev çubuğu düğmesi yok
     internal const uint WS_OVERLAPPED = 0x00000000;
 
+    // ---- Yüzen HUD ----
+    internal const int GWL_EXSTYLE = -20;
+    internal const int WS_EX_APPWINDOW = 0x00040000; // Alt-Tab'da görünme sebebi; sıyrılıyor
+
+    /// <summary>Fare hangi pencere parçasının üstünde sorusu. HUD'ın her yerinden
+    /// sürüklenebilmesi için istemci alanına gelen bu mesaja "başlık çubuğu" cevabı veriyoruz.</summary>
+    internal const int WM_NCHITTEST = 0x0084;
+    internal const int HTCLIENT = 1;
+    internal const int HTCAPTION = 2;
+
+    /// <summary>Sürükleme bitti; konumu bu noktada kaydediyoruz (her hareket adımında değil).</summary>
+    internal const int WM_EXITSIZEMOVE = 0x0232;
+
+    // Sanal ekran (tüm monitörleri kapsayan dikdörtgen) ölçüleri. Kaydedilmiş HUD konumunun
+    // hâlâ görünür bir yerde olup olmadığını sınamak için; WinUI'ın DisplayArea'sı yerine
+    // bunlar kullanılıyor (bkz. HudWindow.Place notu).
+    internal const int SM_XVIRTUALSCREEN = 76;
+    internal const int SM_YVIRTUALSCREEN = 77;
+    internal const int SM_CXVIRTUALSCREEN = 78;
+    internal const int SM_CYVIRTUALSCREEN = 79;
+
+    [LibraryImport("user32.dll")]
+    internal static partial int GetSystemMetrics(int nIndex);
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct RECT
     {

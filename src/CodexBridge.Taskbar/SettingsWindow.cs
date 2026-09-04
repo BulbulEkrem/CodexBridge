@@ -29,6 +29,7 @@ public sealed class SettingsWindow : Window
     private readonly NumberBox _maxRefresh = NewNumber(60, 21600);
     private readonly CheckBox _notifications = new() { Content = "Eşik bildirimleri gönder" };
     private readonly CheckBox _band = new() { Content = "Görev çubuğu bandını göster" };
+    private readonly CheckBox _hud = new() { Content = "Yüzen HUD'ı göster (yeniden başlatınca uygulanır)" };
     private readonly CheckBox _tray = new() { Content = "Tepsi ikonunu göster" };
     private readonly CheckBox _autostart = new() { Content = "Windows açılışında başlat" };
     private readonly TextBlock _message = new() { Opacity = 0.75, TextWrapping = TextWrapping.Wrap };
@@ -88,6 +89,7 @@ public sealed class SettingsWindow : Window
 
         root.Children.Add(Header("Yüzeyler"));
         root.Children.Add(_band);
+        root.Children.Add(_hud);
         root.Children.Add(_tray);
         root.Children.Add(Note("Tepsi ikonu band'ın yedeğidir; kapatman önerilmez."));
         root.Children.Add(_notifications);
@@ -124,6 +126,7 @@ public sealed class SettingsWindow : Window
         _maxRefresh.Value = s.MaxRefreshSeconds;
         _notifications.IsChecked = s.NotificationsEnabled;
         _band.IsChecked = s.BandEnabled;
+        _hud.IsChecked = s.HudEnabled;
         _tray.IsChecked = s.TrayIconEnabled;
         _autostart.IsChecked = Autostart.IsEnabled();
 
@@ -177,6 +180,7 @@ public sealed class SettingsWindow : Window
             MaxRefreshSeconds = (int)_maxRefresh.Value,
             NotificationsEnabled = _notifications.IsChecked == true,
             BandEnabled = _band.IsChecked == true,
+            HudEnabled = _hud.IsChecked == true,
             TrayIconEnabled = _tray.IsChecked == true,
             StartAtLogin = _autostart.IsChecked == true,
         };

@@ -1,3 +1,4 @@
+using CodexBridge.Taskbar.Hud;
 using CodexBridge.Taskbar.Notifications;
 using CodexBridge.Taskbar.Runtime;
 using CodexBridge.Taskbar.Tray;
@@ -20,6 +21,7 @@ public partial class App : Application
     private AppHost? _host;
     private TaskbarWatchdog? _watchdog;
     private MainWindow? _band;
+    private HudWindow? _hud;
     private TrayIcon? _tray;
     private NotificationService? _notifications;
     private SettingsWindow? _settings;
@@ -38,6 +40,7 @@ public partial class App : Application
 
         if (_host.Settings.BandEnabled) CreateBand();
         if (_host.Settings.TrayIconEnabled) CreateTray();
+        if (_host.Settings.HudEnabled) CreateHud();
 
         _notifications = new NotificationService(_host);
         _notifications.OpenSettingsRequested += ShowSettings;
@@ -61,6 +64,14 @@ public partial class App : Application
         _band = new MainWindow(_host!);
         _band.Activate();
         _band.AttachToTaskbar();
+    }
+
+    /// <summary>Yüzen HUD. Band'dan bağımsız yaşıyor: Explorer yeniden başladığında band
+    /// sıfırdan kurulurken HUD hiç etkilenmiyor, çünkü görev çubuğuna parent'lanmış değil.</summary>
+    private void CreateHud()
+    {
+        _hud = new HudWindow(_host!);
+        _hud.Activate();
     }
 
     private void CreateTray()
@@ -91,6 +102,7 @@ public partial class App : Application
         _uiQueue?.TryEnqueue(() =>
         {
             _notifications?.Dispose();
+            _hud?.Detach();
             _tray?.Dispose();
             _watchdog?.Dispose();
             _host?.Dispose();

@@ -1,10 +1,14 @@
 # Yüzen Ambient HUD — Tasarım Önerileri
 
-> Durum: **öneri · onaylanmadı · hiçbiri yazılmadı** · Tarih: 2026-09-04
+> Durum: **A · Kapsül (D4 yerleşimi) SEÇİLDİ ve YAZILDI** · Diğer üçü hâlâ öneri · Tarih: 2026-09-04
 >
-> Bu belge bir karar kaydı değil. Görev çubuğu band'ına alternatif olarak, çubuğun **içinde
-> değil üstünde** duran, sürüklenebilir, her zaman üstte bir HUD için hazırlanmış tasarım
-> seçeneklerini toplar. Uygulanacak varyant seçilmedi.
+> Görev çubuğu band'ına alternatif olarak, çubuğun **içinde değil üstünde** duran,
+> sürüklenebilir, her zaman üstte bir HUD için hazırlanmış tasarım seçeneklerini toplar.
+>
+> **Uygulanan:** A · Kapsül, D4 yerleşimiyle (saatlik ve haftalık ayrı satırlarda, her satırın
+> kendi yüzdesi/geri sayımı/tam genişlik barı) ve resmî marka logolarıyla —
+> `src/CodexBridge.Taskbar/Hud/`. Uygulama sırasında çıkan çökmeler ve uç nokta bulguları
+> `.claude/knowledge/decisions.md` içinde.
 
 ## Neden
 
