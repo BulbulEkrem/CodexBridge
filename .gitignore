@@ -10,3 +10,7 @@ obj/
 # Yerel yayın
 publish/
 *.binlog
+
+# derleme çıktıları
+bin/
+obj/
