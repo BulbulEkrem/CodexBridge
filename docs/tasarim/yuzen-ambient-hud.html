@@ -1,0 +1,819 @@
+<title>Yüzen Ambient Kapsül</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    /* Nötrler mavi-mor tarafa hafif kaydırıldı — Windows sistem yüzeyi hissi. */
+    --ground:    #F1F2F6;
+    --surface:   #FFFFFF;
+    --surface-2: #E7E9EF;
+    --ink:       #16181F;
+    --ink-2:     #565C6C;
+    --ink-3:     #848B9C;
+    --line:      #D9DCE5;
+    --line-soft: #E6E8EF;
+    --accent:    #B85834;
+    --accent-bg: rgba(184, 88, 52, 0.10);
+
+    /* Ürünün kendi anlamsal renkleri — MainWindow.xaml.cs'ten birebir. */
+    --ok:     #6CCB5F;
+    --warn:   #FCE100;
+    --crit:   #FF5B5B;
+    --dim:    #9A9A9A;
+    --claude: #D97757;
+    --codex:  #10A37F;
+
+    --shadow: 0 1px 2px rgba(16, 18, 24, .06), 0 8px 24px -12px rgba(16, 18, 24, .18);
+
+    --step--1: 0.78rem;
+    --step-0:  0.95rem;
+    --step-1:  1.18rem;
+    --step-2:  1.62rem;
+    --step-3:  2.4rem;
+    --step-4:  3.3rem;
+
+    --ui: system-ui, "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #131519;
+      --surface:   #1A1D23;
+      --surface-2: #22262F;
+      --ink:       #ECEEF3;
+      --ink-2:     #A0A7B8;
+      --ink-3:     #737A8C;
+      --line:      #2B2F3A;
+      --line-soft: #232730;
+      --accent:    #E28A64;
+      --accent-bg: rgba(226, 138, 100, 0.13);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -14px rgba(0, 0, 0, .7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:    #131519;
+    --surface:   #1A1D23;
+    --surface-2: #22262F;
+    --ink:       #ECEEF3;
+    --ink-2:     #A0A7B8;
+    --ink-3:     #737A8C;
+    --line:      #2B2F3A;
+    --line-soft: #232730;
+    --accent:    #E28A64;
+    --accent-bg: rgba(226, 138, 100, 0.13);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -14px rgba(0, 0, 0, .7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Instrument Sans", system-ui, sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .eyebrow {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+
+  /* ---------- Başlık ---------- */
+
+  header { padding: 64px 0 40px; }
+  header h1 { font-size: var(--step-4); line-height: 1.02; margin: 14px 0 0; }
+  header .lede {
+    margin: 18px 0 0;
+    max-width: 62ch;
+    font-size: var(--step-1);
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+
+  .constraints { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .chip {
+    font-size: var(--step--1);
+    padding: 5px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink-2);
+    background: var(--surface);
+  }
+  .chip b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Masaüstü sahnesi ---------- */
+
+  .stage {
+    margin-top: 40px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .desktop {
+    position: relative;
+    height: 340px;
+    /* Ekrem'in gerçek duvar kâğıdını andıran sıcak koyu zemin. */
+    background:
+      radial-gradient(120% 90% at 8% 105%, #F2A03C 0%, #E0473E 16%, #8E1F2E 34%, #3A0F14 62%, #240A0E 100%),
+      #240A0E;
+    cursor: default;
+    touch-action: none;
+  }
+
+  .desktop::after {
+    content: "";
+    position: absolute; inset: auto 0 0 0; height: 34px;
+    background: rgba(24, 12, 12, .82);
+    border-top: 1px solid rgba(255,255,255,.06);
+  }
+
+  .desktop-doc {
+    position: absolute; left: 34px; top: 30px; right: 34px;
+    color: rgba(255,255,255,.30);
+    font-family: var(--ui);
+    font-size: 12.5px;
+    line-height: 2.0;
+    pointer-events: none;
+    user-select: none;
+  }
+  .desktop-doc span { display: block; background: rgba(255,255,255,.10); height: 7px; border-radius: 3px; margin-bottom: 13px; }
+  .desktop-doc span:nth-child(1) { width: 52%; }
+  .desktop-doc span:nth-child(2) { width: 78%; }
+  .desktop-doc span:nth-child(3) { width: 65%; }
+  .desktop-doc span:nth-child(4) { width: 71%; }
+  .desktop-doc span:nth-child(5) { width: 40%; }
+
+  .stage-foot {
+    display: flex; flex-wrap: wrap; gap: 6px 20px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    font-size: var(--step--1);
+    color: var(--ink-3);
+  }
+  .stage-foot b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- HUD ortak ---------- */
+
+  .hud {
+    position: absolute;
+    font-family: var(--ui);
+    color: #fff;
+    user-select: none;
+    cursor: grab;
+    touch-action: none;
+    z-index: 2;
+  }
+  .hud:active { cursor: grabbing; }
+  .hud:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+  .glass {
+    background: rgba(26, 24, 28, .74);
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, .13);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.65);
+  }
+
+  .prov-name { font-size: 12.5px; font-weight: 600; line-height: 15px; letter-spacing: -0.01em; }
+  .prov-nums {
+    font-size: 9.5px; line-height: 12px;
+    color: rgba(255,255,255,.62);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 3px; }
+  .track { width: 38px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.17); }
+  .fill  { height: 4px; border-radius: 2px; }
+
+  /* ---------- A · Kapsül ---------- */
+
+  .hud-capsule { border-radius: 12px; padding: 5px; display: flex; gap: 5px; }
+  .cap-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    width: 130px;
+  }
+  .cap-pill.claude { background: rgba(217, 119, 87, .20); }
+  .cap-pill.codex  { background: rgba(16, 163, 127, .20); }
+  .cap-labels { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+
+  /* ---------- B · Sayaç ---------- */
+
+  .hud-clock { border-radius: 12px; padding: 7px 11px; display: flex; align-items: center; gap: 11px; }
+  .clock-time {
+    font-size: 21px; font-weight: 600; line-height: 1; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .clock-meta { display: flex; flex-direction: column; gap: 2px; }
+  .clock-who { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.85); letter-spacing: .02em; }
+  .clock-pct { font-size: 9.5px; color: rgba(255,255,255,.55); font-variant-numeric: tabular-nums; }
+  .clock-rule { width: 1px; align-self: stretch; background: rgba(255,255,255,.14); }
+  .clock-stack { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ---------- C · Orb ---------- */
+
+  .hud-orb { border-radius: 999px; display: flex; align-items: center; overflow: hidden; height: 44px; width: 44px; transition: width .22s cubic-bezier(.2,.7,.3,1); }
+  .hud-orb .orb-core { width: 44px; height: 44px; flex: none; display: grid; place-items: center; position: relative; }
+  .orb-ring { transform: rotate(-90deg); display: block; }
+  .orb-pct {
+    position: absolute; font-size: 11px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+  }
+  .orb-detail {
+    display: flex; align-items: center; gap: 9px;
+    padding-right: 13px; white-space: nowrap;
+    opacity: 0; transition: opacity .16s linear;
+  }
+  .hud-orb:hover, .hud-orb:focus-visible { width: 210px; }
+  .hud-orb:hover .orb-detail, .hud-orb:focus-visible .orb-detail { opacity: 1; transition-delay: .06s; }
+
+  /* ---------- D · Kenar şeridi ---------- */
+
+  .hud-rail {
+    border-radius: 6px; padding: 5px 4px;
+    display: flex; flex-direction: column; gap: 5px; align-items: center;
+    width: 12px; overflow: hidden;
+    transition: width .22s cubic-bezier(.2,.7,.3,1);
+  }
+  .rail-col { width: 4px; height: 48px; border-radius: 2px; background: rgba(255,255,255,.18); position: relative; flex: none; }
+  .rail-lvl { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 2px; }
+  .rail-detail { opacity: 0; transition: opacity .16s linear; white-space: nowrap; }
+  .hud-rail:hover, .hud-rail:focus-visible { width: 128px; padding: 8px 10px; flex-direction: row; align-items: flex-start; gap: 10px; }
+  .hud-rail:hover .rail-detail, .hud-rail:focus-visible .rail-detail { opacity: 1; transition-delay: .06s; }
+  .hud-rail:hover .rail-cols, .hud-rail:focus-visible .rail-cols { display: flex; gap: 5px; }
+  .rail-cols { display: flex; gap: 5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hud-orb, .hud-rail, .orb-detail, .rail-detail { transition: none; }
+  }
+
+  /* ---------- Öneri bölümleri ---------- */
+
+  .section-head { margin: 84px 0 0; padding-top: 30px; border-top: 1px solid var(--line); }
+  .section-head h2 { font-size: var(--step-2); margin-top: 10px; }
+
+  .prop { margin-top: 34px; }
+  .prop-top {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line-soft);
+  }
+  .prop-top h3 { font-size: var(--step-1); }
+  .size-badge {
+    font-family: var(--ui);
+    font-size: var(--step--1); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 3px 9px; border-radius: 6px;
+  }
+  .prop-thesis { margin: 14px 0 0; color: var(--ink-2); max-width: 64ch; }
+
+  .prop-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; margin-top: 22px; align-items: start; }
+  @media (max-width: 760px) { .prop-body { grid-template-columns: minmax(0, 1fr); } }
+
+  .swatch {
+    position: relative;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background:
+      radial-gradient(120% 120% at 10% 110%, #E0473E 0%, #8E1F2E 30%, #3A0F14 66%, #240A0E 100%),
+      #240A0E;
+    min-height: 150px;
+    display: grid; place-items: center;
+    padding: 22px;
+    overflow: hidden;
+  }
+  .swatch .hud { position: static; cursor: default; }
+  .swatch-note {
+    position: absolute; left: 12px; bottom: 9px;
+    font-family: var(--ui); font-size: 10.5px;
+    color: rgba(255,255,255,.42);
+  }
+
+  dl.spec { margin: 0; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 9px 16px; font-size: var(--step--1); }
+  dl.spec dt { color: var(--ink-3); font-weight: 600; }
+  dl.spec dd { margin: 0; color: var(--ink); }
+
+  .cost { margin-top: 16px; padding: 12px 14px; border-left: 2px solid var(--accent); background: var(--accent-bg); border-radius: 0 8px 8px 0; font-size: var(--step--1); color: var(--ink-2); }
+  .cost b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Durum örnekleri ---------- */
+
+  .states { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; }
+  .state-cell { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .state-cap { font-size: 0.7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); font-weight: 600; }
+  .state-frame { background: #241118; border-radius: 10px; padding: 10px; border: 1px solid var(--line); }
+
+  /* ---------- Fizibilite ---------- */
+
+  .feas { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; margin-top: 28px; }
+  @media (max-width: 820px) { .feas { grid-template-columns: minmax(0,1fr); } }
+  .feas-col h4 { margin: 0 0 12px; font-size: var(--step--1); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); font-weight: 600; font-family: "Instrument Sans", sans-serif; }
+  .feas-col ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 11px; }
+  .feas-col li { font-size: var(--step--1); line-height: 1.5; padding-left: 18px; position: relative; color: var(--ink-2); }
+  .feas-col li::before { content: ""; position: absolute; left: 0; top: .55em; width: 7px; height: 7px; border-radius: 2px; }
+  .feas-have li::before { background: var(--ok); }
+  .feas-new  li::before { background: var(--accent); }
+  .feas-risk li::before { background: var(--crit); }
+  .feas-col li b { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.85em;
+    background: var(--surface-2);
+    padding: 1px 5px; border-radius: 4px;
+    color: var(--ink);
+  }
+
+  .closing { margin-top: 40px; padding: 22px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .closing p { margin: 0; color: var(--ink-2); max-width: 68ch; }
+  .closing p + p { margin-top: 12px; }
+  .closing b { color: var(--ink); font-weight: 600; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">CodexBridge · yüzey araştırması</div>
+    <h1>Yüzen ambient kapsül</h1>
+    <p class="lede">
+      Görev çubuğunun içinde değil, üstünde. Sürüklenebilir, her zaman üstte, ekrandan
+      yer çalmayan dört HUD önerisi — dinlenme hâlindeki ayak izine göre en büyükten en küçüğe.
+    </p>
+    <div class="constraints">
+      <span class="chip"><b>Ekranı ayırmaz</b> — çalışma alanı rezerve edilmez</span>
+      <span class="chip"><b>Sürüklenebilir</b> — konum hatırlanır</span>
+      <span class="chip"><b>Her zaman üstte</b></span>
+      <span class="chip">Aynı <b>snapshot</b>, ek kota maliyeti yok</span>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="desktop" id="desktop">
+      <div class="desktop-doc"><span></span><span></span><span></span><span></span><span></span></div>
+
+      <!-- A · Kapsül -->
+      <div class="hud hud-capsule glass" tabindex="0" style="left: 44px; top: 172px;" aria-label="Kapsül önerisi, sürüklenebilir">
+        <div class="cap-pill claude">
+          <div class="cap-labels">
+            <div class="prov-name">Claude</div>
+            <div class="prov-nums">54 · 37 · 2:54</div>
+          </div>
+          <div class="bars">
+            <div class="track"><div class="fill" style="width: 54%; background: var(--ok);"></div></div>
+            <div class="track"><div class="fill" style="width: 37%; background: var(--ok);"></div></div>
+          </div>
+        </div>
+        <div class="cap-pill codex">
+          <div class="cap-labels">
+            <div class="prov-name">Codex</div>
+            <div class="prov-nums">55 · 42 · 3:37</div>
+          </div>
+          <div class="bars">
+            <div class="track"><div class="fill" style="width: 55%; background: var(--ok);"></div></div>
+            <div class="track"><div class="fill" style="width: 42%; background: var(--ok);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B · Sayaç -->
+      <div class="hud hud-clock glass" tabindex="0" style="left: 390px; top: 62px;" aria-label="Sayaç önerisi, sürüklenebilir">
+        <div class="clock-time">2:54</div>
+        <div class="clock-rule"></div>
+        <div class="clock-stack">
+          <div class="clock-meta">
+            <div class="clock-who">Claude</div>
+            <div class="clock-pct">54 · 37</div>
+          </div>
+          <div class="clock-meta">
+            <div class="clock-who">Codex</div>
+            <div class="clock-pct">55 · 42</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C · Orb -->
+      <div class="hud hud-orb glass" tabindex="0" style="left: 660px; top: 196px;" aria-label="Orb önerisi, üzerine gelince açılır, sürüklenebilir">
+        <div class="orb-core">
+          <svg class="orb-ring" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+            <circle cx="17" cy="17" r="14" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"></circle>
+            <circle cx="17" cy="17" r="14" fill="none" stroke="#6CCB5F" stroke-width="4"
+                    stroke-linecap="round" stroke-dasharray="87.96" stroke-dashoffset="39.6"></circle>
+          </svg>
+          <div class="orb-pct">55</div>
+        </div>
+        <div class="orb-detail">
+          <div>
+            <div class="prov-name" style="font-size: 11px;">Codex · 3:37</div>
+            <div class="prov-nums">Claude 54 · 2:54</div>
+          </div>
+          <div class="bars">
+            <div class="track"><div class="fill" style="width: 55%; background: var(--ok);"></div></div>
+            <div class="track"><div class="fill" style="width: 42%; background: var(--ok);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D · Kenar şeridi -->
+      <div class="hud hud-rail glass" tabindex="0" style="left: 906px; top: 96px;" aria-label="Kenar şeridi önerisi, üzerine gelince açılır, sürüklenebilir">
+        <div class="rail-cols">
+          <div class="rail-col"><div class="rail-lvl" style="height: 54%; background: var(--ok);"></div></div>
+          <div class="rail-col"><div class="rail-lvl" style="height: 55%; background: var(--ok);"></div></div>
+        </div>
+        <div class="rail-detail">
+          <div class="prov-name" style="font-size: 11px;">Claude 54</div>
+          <div class="prov-nums">2:54</div>
+          <div class="prov-name" style="font-size: 11px; margin-top: 6px;">Codex 55</div>
+          <div class="prov-nums">3:37</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-foot">
+      <span><b>1:1 ölçek.</b> Dördünü de sürükleyebilirsin.</span>
+      <span>Orb ve şerit üzerine gelince açılır.</span>
+      <span>Sayılar 4 Eylül 21:26'daki gerçek snapshot'tan.</span>
+    </div>
+  </div>
+
+  <!-- ============ ÖNERİLER ============ -->
+
+  <div class="section-head">
+    <div class="eyebrow">Öneriler · ayak izine göre</div>
+    <h2>Dört yaklaşım</h2>
+  </div>
+
+  <!-- A -->
+  <section class="prop">
+    <div class="prop-top">
+      <h3>A · Kapsül</h3>
+      <span class="size-badge">272 × 44 dip</span>
+    </div>
+    <p class="prop-thesis">
+      Band'ın çubuktan sökülmüş hâli. Bugün ekranda ne varsa aynısı, ama görev çubuğunun
+      yer kavgasından çıkmış ve istediğin köşeye taşınabiliyor.
+    </p>
+    <div class="prop-body">
+      <div class="swatch">
+        <div class="hud hud-capsule glass">
+          <div class="cap-pill claude">
+            <div class="cap-labels">
+              <div class="prov-name">Claude</div>
+              <div class="prov-nums">54 · 37 · 2:54</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width: 54%; background: var(--ok);"></div></div>
+              <div class="track"><div class="fill" style="width: 37%; background: var(--ok);"></div></div>
+            </div>
+          </div>
+          <div class="cap-pill codex">
+            <div class="cap-labels">
+              <div class="prov-name">Codex</div>
+              <div class="prov-nums">55 · 42 · 3:37</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width: 55%; background: var(--ok);"></div></div>
+              <div class="track"><div class="fill" style="width: 42%; background: var(--ok);"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="swatch-note">dinlenme hâli = tam hâli</div>
+      </div>
+      <div>
+        <dl class="spec">
+          <dt>Gösterir</dt><dd>İki sağlayıcı, oturum + haftalık %, oturum geri sayımı, iki çubuk</dd>
+          <dt>Etkileşim</dt><dd>Yok — her şey duruyor. Tık = şimdi yenile</dd>
+          <dt>Kod</dt><dd><code>BuildPill</code> olduğu gibi taşınır</dd>
+          <dt>Bedeli</dt><dd>En büyük ayak izi; bir pencerenin üstünde durur</dd>
+        </dl>
+        <div class="cost">
+          <b>En ucuz öneri.</b> Pill çizimi zaten yazılmış ve canlı doğrulanmış durumda;
+          yeni olan yalnızca pencerenin kendisi — kromsuz, saydam, üstte, sürüklenebilir.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="prop">
+    <div class="prop-top">
+      <h3>B · Sayaç</h3>
+      <span class="size-badge">168 × 46 dip</span>
+    </div>
+    <p class="prop-thesis">
+      Geri sayımı başa alır. Az önce eklediğimiz şeyin mantıksal sonucu: asıl merak edilen
+      "kaç dakika kaldı" ise, yüzdeler değil o büyük yazılmalı.
+    </p>
+    <div class="prop-body">
+      <div class="swatch">
+        <div class="hud hud-clock glass">
+          <div class="clock-time">2:54</div>
+          <div class="clock-rule"></div>
+          <div class="clock-stack">
+            <div class="clock-meta">
+              <div class="clock-who">Claude</div>
+              <div class="clock-pct">54 · 37</div>
+            </div>
+            <div class="clock-meta">
+              <div class="clock-who">Codex</div>
+              <div class="clock-pct">55 · 42</div>
+            </div>
+          </div>
+        </div>
+        <div class="swatch-note">büyük sayı = en yakın sıfırlanma</div>
+      </div>
+      <div>
+        <dl class="spec">
+          <dt>Gösterir</dt><dd>En yakın sıfırlanma büyük; iki sağlayıcının yüzdeleri küçük</dd>
+          <dt>Etkileşim</dt><dd>Yok</dd>
+          <dt>Kod</dt><dd>Yeni düzen; <code>FormatClockCountdown</code> hazır</dd>
+          <dt>Bedeli</dt><dd>Çubuklar gider — seviye sayıdan okunur, renkten değil</dd>
+        </dl>
+        <div class="cost">
+          Çubukları düşürmek bir kayıp: bugün band'da <b>renk</b> tek bakışta durumu veriyor.
+          Karşılığında en çok merak edilen sayı üç kat büyüyor. Renk, saatin kendisine
+          taşınabilir — kritikte <span style="color: var(--crit); font-weight: 600;">kırmızıya</span> döner.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="prop">
+    <div class="prop-top">
+      <h3>C · Orb</h3>
+      <span class="size-badge">44 × 44 dip</span>
+    </div>
+    <p class="prop-thesis">
+      Tek halka, tek sayı: en kısıtlayıcı pencerenin yüzdesi. Üzerine gelince kapsüle açılır.
+      Ekranda sürekli duracak ama hiçbir şeyi örtmeyecek kadar küçük olan boyut bu.
+    </p>
+    <div class="prop-body">
+      <div class="swatch">
+        <div class="hud hud-orb glass" tabindex="0">
+          <div class="orb-core">
+            <svg class="orb-ring" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+              <circle cx="17" cy="17" r="14" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="4"></circle>
+              <circle cx="17" cy="17" r="14" fill="none" stroke="#6CCB5F" stroke-width="4"
+                      stroke-linecap="round" stroke-dasharray="87.96" stroke-dashoffset="39.6"></circle>
+            </svg>
+            <div class="orb-pct">55</div>
+          </div>
+          <div class="orb-detail">
+            <div>
+              <div class="prov-name" style="font-size: 11px;">Codex · 3:37</div>
+              <div class="prov-nums">Claude 54 · 2:54</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width: 55%; background: var(--ok);"></div></div>
+              <div class="track"><div class="fill" style="width: 42%; background: var(--ok);"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="swatch-note">üzerine gel → 210 dip'e açılır</div>
+      </div>
+      <div>
+        <dl class="spec">
+          <dt>Gösterir</dt><dd>En kısıtlayıcı %; halka o yüzdeyi ve rengi taşır</dd>
+          <dt>Açılınca</dt><dd>İki sağlayıcı, geri sayımlar, çubuklar</dd>
+          <dt>Kod</dt><dd>Yeni halka çizimi + genişleme animasyonu + pencere yeniden boyutlandırma</dd>
+          <dt>Bedeli</dt><dd>İkinci sağlayıcı fareyi götürmeden görünmez</dd>
+        </dl>
+        <div class="cost">
+          Pencerenin hover'da <b>gerçekten büyümesi</b> gerekiyor — WinUI tarafında bu, XAML
+          animasyonu değil <code>AppWindow.Resize</code> demek, ve fare pencereden çıkarken
+          küçülmenin titremeden yapılması gerekiyor. Dördü içinde en zor olan bu.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- D -->
+  <section class="prop">
+    <div class="prop-top">
+      <h3>D · Kenar şeridi</h3>
+      <span class="size-badge">12 × 62 dip</span>
+    </div>
+    <p class="prop-thesis">
+      Hiç yazı yok. Ekranın kenarına yapışan iki ince sütun, yalnızca renk ve doluluk.
+      Okunmaz — çevresel görüşle fark edilir. Dördü içinde "ambient" kelimesini gerçekten
+      hak eden tek öneri.
+    </p>
+    <div class="prop-body">
+      <div class="swatch">
+        <div class="hud hud-rail glass" tabindex="0">
+          <div class="rail-cols">
+            <div class="rail-col"><div class="rail-lvl" style="height: 54%; background: var(--ok);"></div></div>
+            <div class="rail-col"><div class="rail-lvl" style="height: 55%; background: var(--ok);"></div></div>
+          </div>
+          <div class="rail-detail">
+            <div class="prov-name" style="font-size: 11px;">Claude 54</div>
+            <div class="prov-nums">2:54</div>
+            <div class="prov-name" style="font-size: 11px; margin-top: 6px;">Codex 55</div>
+            <div class="prov-nums">3:37</div>
+          </div>
+        </div>
+        <div class="swatch-note">üzerine gel → sayılar gelir</div>
+      </div>
+      <div>
+        <dl class="spec">
+          <dt>Gösterir</dt><dd>İki sütun doluluk + renk. Sayı yok, ad yok</dd>
+          <dt>Açılınca</dt><dd>Adlar, yüzdeler, geri sayımlar</dd>
+          <dt>Kod</dt><dd>Yeni çizim; kenara yapışma mantığı</dd>
+          <dt>Bedeli</dt><dd>Dikkat etmeden hiçbir şey söylemez — bilinçli tercih</dd>
+        </dl>
+        <div class="cost">
+          Kenara yapışması <b>ekran kenarını bilmek</b> demek: çok monitörde hangi ekranın
+          hangi kenarı, DPI değişince ne olacak. Band'da bunun için zaten
+          <code>WM_DISPLAYCHANGE</code> / <code>SPI_SETWORKAREA</code> dinleyen kod var,
+          uyarlanabilir.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Durum renkleri -->
+  <div class="section-head">
+    <div class="eyebrow">Anlamsal renk · örnek durumlar</div>
+    <h2>Kritik hâlde ne olur</h2>
+  </div>
+  <p class="prop-thesis" style="margin-top: 14px;">
+    Yukarıdaki sayılar gerçek ve şu an her şey yeşil. Renk kuralının ne yaptığını görmek için
+    kapsül üç durumda — bunlar <b>uydurma</b> değerler, eşikler ayarlardan geliyor (uyarı %75, kritik %90).
+  </p>
+  <div class="states">
+    <div class="state-cell">
+      <div class="state-cap">Normal · %54</div>
+      <div class="state-frame">
+        <div class="hud hud-capsule glass" style="position: static;">
+          <div class="cap-pill claude">
+            <div class="cap-labels">
+              <div class="prov-name">Claude</div>
+              <div class="prov-nums">54 · 37 · 2:54</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width: 54%; background: var(--ok);"></div></div>
+              <div class="track"><div class="fill" style="width: 37%; background: var(--ok);"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="state-cell">
+      <div class="state-cap">Uyarı · %78</div>
+      <div class="state-frame">
+        <div class="hud hud-capsule glass" style="position: static;">
+          <div class="cap-pill" style="background: rgba(252, 225, 0, .18);">
+            <div class="cap-labels">
+              <div class="prov-name">Claude</div>
+              <div class="prov-nums">78 · 37 · 1:12</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width: 78%; background: var(--warn);"></div></div>
+              <div class="track"><div class="fill" style="width: 37%; background: var(--ok);"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="state-cell">
+      <div class="state-cap">Kritik · %94</div>
+      <div class="state-frame">
+        <div class="hud hud-capsule glass" style="position: static;">
+          <div class="cap-pill" style="background: rgba(255, 91, 91, .20);">
+            <div class="cap-labels">
+              <div class="prov-name">Claude</div>
+              <div class="prov-nums">94 · 37 · 0:23</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width: 94%; background: var(--crit);"></div></div>
+              <div class="track"><div class="fill" style="width: 37%; background: var(--ok);"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fizibilite -->
+  <div class="section-head">
+    <div class="eyebrow">Fizibilite</div>
+    <h2>Yapılabilir mi</h2>
+  </div>
+  <p class="prop-thesis" style="margin-top: 14px;">
+    Evet — ve görev çubuğu band'ından <b>daha basit</b>. Band'ın zor kısımlarının hiçbiri burada yok:
+    <code>Shell_TrayWnd</code>'e parent'lama, Explorer-restart gözcüsü, ReBar konumlandırması,
+    <code>NIF_GUID</code> kaydı. Yüzen pencere sıradan bir top-level pencere.
+  </p>
+
+  <div class="feas">
+    <div class="feas-col feas-have">
+      <h4>Elimizde olan</h4>
+      <ul>
+        <li><b>Saydam pencere</b> — <code>TransparentTintBackdrop</code> bu oturumda canlı doğrulandı</li>
+        <li><b>Kromsuz pencere</b> — <code>SetBorderAndTitleBar(false,false)</code> + Win32 stil sıyırma yazılı</li>
+        <li><b>Pill çizimi</b> — <code>BuildPill</code>, renk kuralı, çubuklar</li>
+        <li><b>Geri sayım tikleyicisi</b> — 20 sn, veriden bağımsız</li>
+        <li><b>Tek yenileme noktası</b> — yeni yüzey ek kota tüketmez</li>
+        <li><b>Ekran/DPI olayları</b> — subclass proc zaten dinliyor</li>
+        <li><b>Ayar kalıcılığı</b> — <code>AppSettings</code> + atomik yazım</li>
+      </ul>
+    </div>
+    <div class="feas-col feas-new">
+      <h4>Yazılacak olan</h4>
+      <ul>
+        <li><b>Her zaman üstte</b> — <code>OverlappedPresenter.IsAlwaysOnTop</code></li>
+        <li><b>Sürükleme</b> — <code>WM_NCHITTEST</code> → <code>HTCAPTION</code>, mevcut subclass proc'un içine</li>
+        <li><b>Konum hafızası</b> — hangi monitör + o monitöre göre oran; ekran gidince güvenli geri düşüş</li>
+        <li><b>Alt-Tab ve çubukta görünmeme</b> — <code>WS_EX_TOOLWINDOW</code></li>
+        <li><b>Bağlam menüsü</b> — tepsininki yeniden kullanılabilir</li>
+      </ul>
+    </div>
+    <div class="feas-col feas-risk">
+      <h4>Riskli olan</h4>
+      <ul>
+        <li><b>Tam ekran uygulamalar</b> — oyun/video "her zaman üstte"yi örter ya da tersi: senin üstüne biner. Ne yapacağına karar vermek gerek</li>
+        <li><b>Tıklama geçirgenliği</b> — dinlenirken tıklamayı altındaki pencereye geçirmek istiyorsan sürükleme ile çakışır; bir modifiye tuş gerekir</li>
+        <li><b>Saydamlık ↔ okunabilirlik</b> — "ambient" düşük opaklık ister, sayı yüksek kontrast ister</li>
+        <li><b>Band ile birlikte mi?</b> — ikisi aynı anda açıksa aynı bilgi iki yerde durur</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="closing">
+    <p>
+      <b>Ölçüt ne olmalı:</b> bu yüzeyin işi seni bilgilendirmek değil, <b>rahatsız etmemek.</b>
+      Band görev çubuğunda yer için yarışıyor; kapsül hiçbir şeyle yarışmıyor ama gözünün önünde
+      duruyor. A en çok bilgiyi verir, D en az rahatsız eder — ikisi aynı eksenin iki ucu.
+    </p>
+    <p>
+      Hepsi <b>öneri</b>; hiçbiri yazılmadı. Hangisini istersen ondan başlarız, ya da ikisini
+      birleştiririz — örneğin dinlenirken D, tıklayınca A.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var desktop = document.getElementById('desktop');
+    if (!desktop) return;
+
+    var active = null, dx = 0, dy = 0;
+
+    desktop.addEventListener('pointerdown', function (e) {
+      var hud = e.target.closest('.hud');
+      if (!hud || !desktop.contains(hud)) return;
+      active = hud;
+      var box = hud.getBoundingClientRect();
+      var scene = desktop.getBoundingClientRect();
+      dx = e.clientX - box.left;
+      dy = e.clientY - box.top;
+      hud.style.zIndex = '5';
+      hud.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    desktop.addEventListener('pointermove', function (e) {
+      if (!active) return;
+      var scene = desktop.getBoundingClientRect();
+      var box = active.getBoundingClientRect();
+      var x = e.clientX - scene.left - dx;
+      var y = e.clientY - scene.top - dy;
+      x = Math.max(0, Math.min(x, scene.width - box.width));
+      y = Math.max(0, Math.min(y, scene.height - box.height));
+      active.style.left = x + 'px';
+      active.style.top = y + 'px';
+    });
+
+    function release(e) {
+      if (!active) return;
+      active.style.zIndex = '2';
+      active = null;
+    }
+    desktop.addEventListener('pointerup', release);
+    desktop.addEventListener('pointercancel', release);
+  })();
+</script>

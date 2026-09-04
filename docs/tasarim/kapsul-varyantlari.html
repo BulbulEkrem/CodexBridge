@@ -1,0 +1,658 @@
+<title>Kapsül Varyantları</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground:    #F1F2F6;
+    --surface:   #FFFFFF;
+    --surface-2: #E7E9EF;
+    --ink:       #16181F;
+    --ink-2:     #565C6C;
+    --ink-3:     #848B9C;
+    --line:      #D9DCE5;
+    --line-soft: #E6E8EF;
+    --accent:    #B85834;
+    --accent-bg: rgba(184, 88, 52, 0.10);
+
+    --ok:     #6CCB5F;
+    --warn:   #FCE100;
+    --crit:   #FF5B5B;
+    --claude: #D97757;
+    --codex:  #10A37F;
+
+    --shadow: 0 1px 2px rgba(16, 18, 24, .06), 0 8px 24px -12px rgba(16, 18, 24, .18);
+
+    --step--1: 0.78rem;
+    --step-0:  0.95rem;
+    --step-1:  1.18rem;
+    --step-2:  1.62rem;
+    --step-4:  3.1rem;
+
+    --ui: system-ui, "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #131519;
+      --surface:   #1A1D23;
+      --surface-2: #22262F;
+      --ink:       #ECEEF3;
+      --ink-2:     #A0A7B8;
+      --ink-3:     #737A8C;
+      --line:      #2B2F3A;
+      --line-soft: #232730;
+      --accent:    #E28A64;
+      --accent-bg: rgba(226, 138, 100, 0.13);
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:    #131519;
+    --surface:   #1A1D23;
+    --surface-2: #22262F;
+    --ink:       #ECEEF3;
+    --ink-2:     #A0A7B8;
+    --ink-3:     #737A8C;
+    --line:      #2B2F3A;
+    --line-soft: #232730;
+    --accent:    #E28A64;
+    --accent-bg: rgba(226, 138, 100, 0.13);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Instrument Sans", system-ui, sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 24px 96px; }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+    font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; margin: 0;
+  }
+
+  .eyebrow {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.13em;
+    font-weight: 600; color: var(--ink-3);
+  }
+
+  header { padding: 60px 0 34px; }
+  header h1 { font-size: var(--step-4); line-height: 1.03; margin: 13px 0 0; }
+  header .lede { margin: 16px 0 0; max-width: 62ch; font-size: var(--step-1); color: var(--ink-2); line-height: 1.5; }
+
+  .section-head { margin: 76px 0 0; padding-top: 28px; border-top: 1px solid var(--line); }
+  .section-head h2 { font-size: var(--step-2); margin-top: 9px; }
+  .section-head p { margin: 14px 0 0; max-width: 66ch; color: var(--ink-2); }
+
+  /* ---------- Veri deposu ---------- */
+
+  .data-cols { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; margin-top: 28px; }
+  @media (max-width: 840px) { .data-cols { grid-template-columns: minmax(0,1fr); } }
+
+  .dcol { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 18px 20px; box-shadow: var(--shadow); }
+  .dcol h4 { margin: 0 0 4px; font-size: var(--step-0); font-family: "Instrument Sans", sans-serif; font-weight: 600; }
+  .dcol .sub { font-size: var(--step--1); color: var(--ink-3); margin: 0 0 14px; }
+  .dcol ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .dcol li { font-size: var(--step--1); line-height: 1.45; padding-left: 17px; position: relative; color: var(--ink-2); }
+  .dcol li::before { content: ""; position: absolute; left: 0; top: .5em; width: 7px; height: 7px; border-radius: 50%; }
+  .dcol li b { color: var(--ink); font-weight: 600; }
+  .d-live li::before  { background: var(--ok); }
+  .d-empty li::before { background: var(--ink-3); }
+  .d-calc li::before  { background: var(--accent); }
+
+  code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--ink);
+  }
+
+  /* ---------- Vitrin ---------- */
+
+  .variant { margin-top: 34px; }
+  .variant-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 9px 15px; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
+  .variant-top h3 { font-size: var(--step-1); }
+  .badge {
+    font-family: var(--ui); font-size: var(--step--1); font-weight: 600;
+    font-variant-numeric: tabular-nums; color: var(--accent);
+    background: var(--accent-bg); padding: 3px 9px; border-radius: 6px;
+  }
+  .variant-note { margin: 13px 0 0; color: var(--ink-2); max-width: 66ch; font-size: var(--step-0); }
+  .variant-note b { color: var(--ink); font-weight: 600; }
+
+  .swatch {
+    margin-top: 18px;
+    border-radius: 12px; border: 1px solid var(--line);
+    background: radial-gradient(130% 130% at 6% 112%, #E0473E 0%, #8E1F2E 28%, #3A0F14 64%, #240A0E 100%), #240A0E;
+    padding: 30px 24px;
+    display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center;
+    overflow-x: auto;
+  }
+
+  /* ---------- HUD gövdesi ---------- */
+
+  .hud { font-family: var(--ui); color: #fff; user-select: none; }
+  .glass {
+    background: rgba(26, 24, 28, .76);
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    border: 1px solid rgba(255,255,255,.13);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.65);
+    border-radius: 12px;
+  }
+
+  .cap { display: flex; gap: 5px; padding: 5px; }
+  .pill { position: relative; border-radius: 8px; overflow: hidden; display: flex; align-items: center; gap: 9px; padding: 5px 10px; }
+  .pill.claude { background: rgba(217,119,87,.20); }
+  .pill.codex  { background: rgba(16,163,127,.20); }
+
+  .mark { flex: none; display: block; }
+  .col { display: flex; flex-direction: column; min-width: 0; }
+
+  .t-name { font-size: 12.5px; font-weight: 600; line-height: 15px; letter-spacing: -0.01em; }
+  .t-num  { font-size: 9.5px; line-height: 12px; color: rgba(255,255,255,.62); font-variant-numeric: tabular-nums; }
+  .t-big  { font-size: 19px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .t-cap  { font-size: 8.5px; line-height: 11px; letter-spacing: .07em; text-transform: uppercase; color: rgba(255,255,255,.45); font-weight: 600; }
+  .t-plan { font-size: 8.5px; line-height: 11px; color: rgba(255,255,255,.5); font-variant-numeric: tabular-nums; }
+
+  .bars { display: flex; flex-direction: column; gap: 3px; flex: none; }
+  .track { width: 38px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.17); }
+  .track.wide { width: 54px; }
+  .fill { height: 4px; border-radius: 2px; }
+
+  .rowline { display: flex; align-items: center; gap: 6px; }
+  .rowline .t-cap { width: 26px; flex: none; }
+
+  /* Filigran: logo pill'i taşarak kaplıyor, içerik üstünde kalıyor */
+  .watermark { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); opacity: .17; pointer-events: none; }
+  .watermark-full { position: absolute; left: -18px; top: 50%; transform: translateY(-50%); opacity: .13; pointer-events: none; }
+  .pill > .col, .pill > .bars, .pill > .mark, .pill > .stack { position: relative; z-index: 1; }
+
+  .edge { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+
+  .stack { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+  .cap-label {
+    font-family: var(--ui); font-size: 10.5px; color: rgba(255,255,255,.45);
+    align-self: flex-end; margin-top: -8px;
+  }
+  .unit { display: flex; flex-direction: column; gap: 7px; align-items: center; }
+  .unit-cap { font-family: var(--ui); font-size: 10.5px; color: rgba(255,255,255,.5); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Not kutusu ---------- */
+
+  .note { margin-top: 16px; padding: 12px 15px; border-left: 2px solid var(--accent); background: var(--accent-bg); border-radius: 0 8px 8px 0; font-size: var(--step--1); color: var(--ink-2); }
+  .note b { color: var(--ink); font-weight: 600; }
+
+  .closing { margin-top: 44px; padding: 22px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .closing p { margin: 0; color: var(--ink-2); max-width: 68ch; }
+  .closing p + p { margin-top: 12px; }
+  .closing b { color: var(--ink); font-weight: 600; }
+</style>
+
+<!-- Marka işaretleri. Claude'un ışın demeti geometrik olduğu için birebir çizilebiliyor;
+     Codex/OpenAI düğümü altı loblu bir yaklaşıklama. Gerçek uygulamada logo dosyaları
+     kaynak olarak gömülür — bunlar yerleşimi değerlendirmek için. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="mk-claude">
+      <g fill="currentColor">
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(32.7 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(65.5 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(98.2 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(130.9 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(163.6 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(196.4 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(229.1 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(261.8 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(294.5 16 16)"/>
+        <rect x="15.1" y="2.4" width="1.8" height="11.4" rx=".9" transform="rotate(327.3 16 16)"/>
+      </g>
+    </g>
+    <g id="mk-codex">
+      <g fill="none" stroke="currentColor" stroke-width="2.1">
+        <rect x="4.6" y="11.1" width="22.8" height="9.8" rx="4.9"/>
+        <rect x="4.6" y="11.1" width="22.8" height="9.8" rx="4.9" transform="rotate(60 16 16)"/>
+        <rect x="4.6" y="11.1" width="22.8" height="9.8" rx="4.9" transform="rotate(120 16 16)"/>
+      </g>
+    </g>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">CodexBridge · A · Kapsül</div>
+    <h1>Kapsül varyantları</h1>
+    <p class="lede">
+      Kapsülde ne kadar veri durabilir ve logolar adların yerini nasıl alır. Önce elimizdeki
+      veri deposu, sonra dört logo işlemi ve üç yoğunluk — hepsi 1:1 ölçekte.
+    </p>
+  </header>
+
+  <!-- ================= VERİ ================= -->
+  <div class="section-head">
+    <div class="eyebrow">Ne koyabiliriz</div>
+    <h2>Veri deposu</h2>
+    <p>
+      Kapsüle koyabileceğin her şey üç kovadan geliyor. Ortadaki kova <b>şemada tanımlı ama
+      Claude ve Codex kaynaklarımız doldurmuyor</b> — koymak istersen sağlayıcı kodunda iş var.
+      Sağdaki kova hiç şemada yok ama iki snapshot'tan hesaplanabilir.
+    </p>
+  </div>
+
+  <div class="data-cols">
+    <div class="dcol d-live">
+      <h4>Şu an dolu</h4>
+      <p class="sub">snapshot.json'da bugün var</p>
+      <ul>
+        <li><b>Oturum %</b> ve <b>haftalık %</b> — kullanılan ve kalan</li>
+        <li><b>Sıfırlanma zamanı</b> her pencere için → geri sayım ya da mutlak saat (<code>21:20</code>)</li>
+        <li><b>Plan</b> — <code>pro</code>, <code>Max 20x</code></li>
+        <li><b>Durum seviyesi</b> — ok / warning / critical / unknown</li>
+        <li><b>Kaynak</b> — <code>oauth</code>, <code>cli</code>, <code>web</code></li>
+        <li><b>Veri yaşı</b> — <code>updatedAt</code>'ten</li>
+        <li><b>Hata</b> — kod + mesaj (429, kimlik yok…)</li>
+      </ul>
+    </div>
+    <div class="dcol d-empty">
+      <h4>Şemada var, boş</h4>
+      <p class="sub">alan tanımlı, kaynak doldurmuyor</p>
+      <ul>
+        <li><b>Bugünkü maliyet</b> — <code>cost.todayUSD</code></li>
+        <li><b>30 günlük maliyet</b> — <code>cost.last30DaysUSD</code></li>
+        <li><b>Kalan kredi</b> — <code>credits.remaining</code> + birim</li>
+        <li><b>Hesap e-postası</b> — maskeli</li>
+        <li><b>Üçüncül pencere</b> — <code>tertiary</code>, sağlayıcıya özel kotalar için</li>
+        <li><b>Durum etiketi</b> — <code>status.label</code>, serbest metin</li>
+      </ul>
+    </div>
+    <div class="dcol d-calc">
+      <h4>Türetilebilir</h4>
+      <p class="sub">şemada yok, iki snapshot yeter</p>
+      <ul>
+        <li><b>Yakma hızı</b> — %/saat. <code>NotificationEngine</code> zaten iki snapshot karşılaştırıyor</li>
+        <li><b>Tahmini tükeniş</b> — bu hızla %100'e kaç dakika</li>
+        <li><b>Yetişir mi</b> — tükeniş sıfırlanmadan önce mi sonra mı</li>
+        <li><b>Pencere ilerlemesi</b> — sürenin yüzde kaçı geçti; kotayı hızlı mı yakıyorsun</li>
+        <li><b>Eğilim</b> — son N snapshot'ın mini grafiği</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>En çok işe yarayacak ekleme yakma hızı.</b> Yüzde ve geri sayım "ne kadar kaldı"yı söylüyor
+    ama "yetişir miyim"i söylemiyor. %54'te 2 saat 54 dakikan varsa rahatsın; aynı yüzdede
+    saatte %18 yakıyorsan değilsin. İki snapshot'ın farkından çıkıyor, sağlayıcıya hiç
+    dokunmadan.
+  </div>
+
+  <!-- ================= LOGO ================= -->
+  <div class="section-head">
+    <div class="eyebrow">Logo işlemi</div>
+    <h2>Dört yaklaşım</h2>
+    <p>
+      Ad metnini logo ile değiştirmek yaklaşık <b>34 dip</b> genişlik kazandırıyor — o yer
+      doğrudan veriye gidiyor. Aşağıdaki dördü logoyu farklı ağırlıkta kullanıyor.
+    </p>
+  </div>
+
+  <!-- L1 -->
+  <section class="variant">
+    <div class="variant-top">
+      <h3>L1 · Ad yerine logo</h3>
+      <span class="badge">kazanç ≈ 34 dip</span>
+    </div>
+    <p class="variant-note">
+      En doğrudan takas. "Claude" yazısı 20 dip'lik işarete iner, kazanılan yer üçüncü bir
+      veriye gider. İki sağlayıcın varken logo <b>zaten yeterli ayırt edici</b> — üçüncü bir
+      sağlayıcı eklenirse yeniden düşünmek gerekir.
+    </p>
+    <div class="swatch">
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill claude">
+            <svg class="mark" width="20" height="20" viewBox="0 0 32 32" style="color:#F0A98C"><use href="#mk-claude"/></svg>
+            <div class="col">
+              <div class="t-name">54 · 37</div>
+              <div class="t-num">2:54 · %18/sa</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:54%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:37%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+          <div class="pill codex">
+            <svg class="mark" width="20" height="20" viewBox="0 0 32 32" style="color:#5FD6B8"><use href="#mk-codex"/></svg>
+            <div class="col">
+              <div class="t-name">55 · 42</div>
+              <div class="t-num">3:37 · %9/sa</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:55%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:42%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">268 × 44 dip · yakma hızı sığdı</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- L2 -->
+  <section class="variant">
+    <div class="variant-top">
+      <h3>L2 · Taşan filigran</h3>
+      <span class="badge">0 dip · bedava</span>
+    </div>
+    <p class="variant-note">
+      Logo büyür, saydamlaşır ve pill'in kenarından taşarak kırpılır. Hiç yer kaplamıyor
+      çünkü <b>arkada</b>. Marka kimliği en güçlü burada; okunabilirlik riski de burada —
+      filigran çok belirginse rakamlarla yarışır. Aşağıda %17 opaklıkta.
+    </p>
+    <div class="swatch">
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill claude">
+            <svg class="watermark" width="60" height="60" viewBox="0 0 32 32" style="color:#F0A98C"><use href="#mk-claude"/></svg>
+            <div class="col">
+              <div class="t-name">Claude</div>
+              <div class="t-num">54 · 37 · 2:54</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:54%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:37%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+          <div class="pill codex">
+            <svg class="watermark" width="60" height="60" viewBox="0 0 32 32" style="color:#5FD6B8"><use href="#mk-codex"/></svg>
+            <div class="col">
+              <div class="t-name">Codex</div>
+              <div class="t-num">55 · 42 · 3:37</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:55%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:42%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">272 × 44 dip · sağ kenardan taşar</div>
+      </div>
+
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill claude">
+            <svg class="watermark-full" width="88" height="88" viewBox="0 0 32 32" style="color:#F0A98C"><use href="#mk-claude"/></svg>
+            <div class="col">
+              <div class="t-name">Claude</div>
+              <div class="t-num">54 · 37 · 2:54</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:54%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:37%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">tam kaplama · %13 opaklık</div>
+      </div>
+    </div>
+    <div class="note">
+      Sağdaki tam kaplama versiyonunda işaret pill'in <b>tamamını</b> dolduruyor ve dört
+      kenardan da kırpılıyor. Daha atmosferik ama rakamların kontrastı düşüyor — kritik
+      durumda kırmızı çubuk filigranla çakışabilir.
+    </div>
+  </section>
+
+  <!-- L3 -->
+  <section class="variant">
+    <div class="variant-top">
+      <h3>L3 · Logo göstergenin kendisi</h3>
+      <span class="badge">çubuk yerine geçer</span>
+    </div>
+    <p class="variant-note">
+      İşaret aşağıdan yukarı doluyor: doluluk oranı <b>en kısıtlayıcı pencerenin yüzdesi</b>.
+      Marka hem kimlik hem ölçer oluyor, ayrı bir çubuğa gerek kalmıyor. En özgün olanı bu —
+      ama tek bir sayı gösterebiliyor, ikinci pencere metne düşüyor.
+    </p>
+    <div class="swatch">
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill claude">
+            <svg class="mark" width="26" height="26" viewBox="0 0 32 32">
+              <defs><clipPath id="fill-cl"><rect x="0" y="14.7" width="32" height="17.3"/></clipPath></defs>
+              <g style="color:rgba(255,255,255,.22)"><use href="#mk-claude"/></g>
+              <g style="color:#6CCB5F" clip-path="url(#fill-cl)"><use href="#mk-claude"/></g>
+            </svg>
+            <div class="col">
+              <div class="t-name">54<span style="font-size:9px;opacity:.6">%</span> · 2:54</div>
+              <div class="t-num">haftalık 37 · 3g 15sa</div>
+            </div>
+          </div>
+          <div class="pill codex">
+            <svg class="mark" width="26" height="26" viewBox="0 0 32 32">
+              <defs><clipPath id="fill-cx"><rect x="0" y="14.4" width="32" height="17.6"/></clipPath></defs>
+              <g style="color:rgba(255,255,255,.22)"><use href="#mk-codex"/></g>
+              <g style="color:#6CCB5F" clip-path="url(#fill-cx)"><use href="#mk-codex"/></g>
+            </svg>
+            <div class="col">
+              <div class="t-name">55<span style="font-size:9px;opacity:.6">%</span> · 3:37</div>
+              <div class="t-num">haftalık 42 · 4g 13sa</div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">236 × 44 dip · çubuk yok</div>
+      </div>
+
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill" style="background:rgba(255,91,91,.20)">
+            <svg class="mark" width="26" height="26" viewBox="0 0 32 32">
+              <defs><clipPath id="fill-crit"><rect x="0" y="2.6" width="32" height="29.4"/></clipPath></defs>
+              <g style="color:rgba(255,255,255,.22)"><use href="#mk-claude"/></g>
+              <g style="color:#FF5B5B" clip-path="url(#fill-crit)"><use href="#mk-claude"/></g>
+            </svg>
+            <div class="col">
+              <div class="t-name">94<span style="font-size:9px;opacity:.6">%</span> · 0:23</div>
+              <div class="t-num">haftalık 37 · 3g 15sa</div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">kritik %94 · örnek değer</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- L4 -->
+  <section class="variant">
+    <div class="variant-top">
+      <h3>L4 · Logo + renk kenarı</h3>
+      <span class="badge">kazanç ≈ 34 dip</span>
+    </div>
+    <p class="variant-note">
+      Logo küçük kalıyor, sağlayıcının kendi rengi ince bir kenar şeridine çekiliyor. Pill'in
+      dolgu rengi nötrleşiyor — böylece <b>dolgu rengi durum için serbest kalıyor</b>. Bugün
+      dolgu hem markayı hem durumu anlatmaya çalışıyor; burada iş bölünüyor.
+    </p>
+    <div class="swatch">
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill" style="background:rgba(255,255,255,.07)">
+            <div class="edge" style="background:var(--claude)"></div>
+            <svg class="mark" width="18" height="18" viewBox="0 0 32 32" style="color:#F0A98C;margin-left:4px"><use href="#mk-claude"/></svg>
+            <div class="col">
+              <div class="t-name">54 · 37</div>
+              <div class="t-num">2:54 · pro</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:54%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:37%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+          <div class="pill" style="background:rgba(255,255,255,.07)">
+            <div class="edge" style="background:var(--codex)"></div>
+            <svg class="mark" width="18" height="18" viewBox="0 0 32 32" style="color:#5FD6B8;margin-left:4px"><use href="#mk-codex"/></svg>
+            <div class="col">
+              <div class="t-name">55 · 42</div>
+              <div class="t-num">3:37 · plus</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:55%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:42%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">264 × 44 dip · plan adı sığdı</div>
+      </div>
+
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill" style="background:rgba(255,91,91,.16)">
+            <div class="edge" style="background:var(--claude)"></div>
+            <svg class="mark" width="18" height="18" viewBox="0 0 32 32" style="color:#F0A98C;margin-left:4px"><use href="#mk-claude"/></svg>
+            <div class="col">
+              <div class="t-name">94 · 37</div>
+              <div class="t-num">0:23 · pro</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:94%;background:var(--crit)"></div></div>
+              <div class="track"><div class="fill" style="width:37%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">dolgu durumu anlatıyor · örnek</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= YOĞUNLUK ================= -->
+  <div class="section-head">
+    <div class="eyebrow">Veri yoğunluğu</div>
+    <h2>Üç kademe</h2>
+    <p>
+      Aynı logo işlemiyle (L1) üç farklı doluluk. Genişlik bilgiyle birlikte büyüyor;
+      hangisinin fazla geldiğini gözle karşılaştırmak için üçü de 1:1.
+    </p>
+  </div>
+
+  <section class="variant">
+    <div class="swatch" style="flex-direction: column; align-items: center; gap: 26px;">
+
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill claude">
+            <svg class="mark" width="20" height="20" viewBox="0 0 32 32" style="color:#F0A98C"><use href="#mk-claude"/></svg>
+            <div class="col"><div class="t-name">54 · 2:54</div></div>
+          </div>
+          <div class="pill codex">
+            <svg class="mark" width="20" height="20" viewBox="0 0 32 32" style="color:#5FD6B8"><use href="#mk-codex"/></svg>
+            <div class="col"><div class="t-name">55 · 3:37</div></div>
+          </div>
+        </div>
+        <div class="unit-cap">D1 · Kompakt — 186 × 36 dip · en kısıtlayıcı % + geri sayım</div>
+      </div>
+
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill claude">
+            <svg class="mark" width="20" height="20" viewBox="0 0 32 32" style="color:#F0A98C"><use href="#mk-claude"/></svg>
+            <div class="col">
+              <div class="t-name">54 · 37</div>
+              <div class="t-num">2:54 · %18/sa</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:54%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:37%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+          <div class="pill codex">
+            <svg class="mark" width="20" height="20" viewBox="0 0 32 32" style="color:#5FD6B8"><use href="#mk-codex"/></svg>
+            <div class="col">
+              <div class="t-name">55 · 42</div>
+              <div class="t-num">3:37 · %9/sa</div>
+            </div>
+            <div class="bars">
+              <div class="track"><div class="fill" style="width:55%;background:var(--ok)"></div></div>
+              <div class="track"><div class="fill" style="width:42%;background:var(--ok)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">D2 · Dengeli — 268 × 44 dip · bugünküne yakma hızı eklenmiş</div>
+      </div>
+
+      <div class="unit">
+        <div class="hud cap glass">
+          <div class="pill claude" style="padding:7px 11px">
+            <svg class="mark" width="26" height="26" viewBox="0 0 32 32" style="color:#F0A98C"><use href="#mk-claude"/></svg>
+            <div class="stack">
+              <div class="rowline">
+                <span class="t-cap">Otr</span>
+                <div class="track wide"><div class="fill" style="width:54%;background:var(--ok)"></div></div>
+                <span class="t-num">54%</span>
+                <span class="t-num" style="opacity:.75">2:54</span>
+              </div>
+              <div class="rowline">
+                <span class="t-cap">Hft</span>
+                <div class="track wide"><div class="fill" style="width:37%;background:var(--ok)"></div></div>
+                <span class="t-num">37%</span>
+                <span class="t-num" style="opacity:.75">3g 15sa</span>
+              </div>
+              <div class="t-plan">pro · %18/sa · bu hızla 4:26'da biter — sıfırlanma önce</div>
+            </div>
+          </div>
+          <div class="pill codex" style="padding:7px 11px">
+            <svg class="mark" width="26" height="26" viewBox="0 0 32 32" style="color:#5FD6B8"><use href="#mk-codex"/></svg>
+            <div class="stack">
+              <div class="rowline">
+                <span class="t-cap">Otr</span>
+                <div class="track wide"><div class="fill" style="width:55%;background:var(--ok)"></div></div>
+                <span class="t-num">55%</span>
+                <span class="t-num" style="opacity:.75">3:37</span>
+              </div>
+              <div class="rowline">
+                <span class="t-cap">Hft</span>
+                <div class="track wide"><div class="fill" style="width:42%;background:var(--ok)"></div></div>
+                <span class="t-num">42%</span>
+                <span class="t-num" style="opacity:.75">4g 13sa</span>
+              </div>
+              <div class="t-plan">plus · %9/sa · sıfırlanmaya kadar %87'de kalır</div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-cap">D3 · Detaylı — 476 × 62 dip · etiketli satırlar, plan, yakma hızı, tahmin</div>
+      </div>
+
+    </div>
+    <div class="note">
+      <b>D3 artık kapsül değil, kart.</b> 476 dip yatay yer ve iki katı yükseklik istiyor;
+      yüzen HUD olarak sürekli açık durmaz. Doğru kullanımı <b>kapsülün açılmış hâli</b> olmak:
+      dinlenirken D1 ya da D2, tıklayınca D3'e genişler.
+    </div>
+  </section>
+
+  <div class="closing">
+    <p>
+      <b>Bir seçim değil, iki seçim var:</b> logo işlemi (L1–L4) ve yoğunluk (D1–D3) birbirinden
+      bağımsız — istediğin ikisini eşleyebilirsin. Yukarıdaki yoğunluk örnekleri L1 ile çizildi.
+    </p>
+    <p>
+      <b>Logolar hakkında dürüst not:</b> Claude'un ışın demeti geometrik olduğu için birebir
+      çizilebildi; Codex/OpenAI düğümü altı loblu bir <b>yaklaşıklama</b>. Gerçek uygulamada
+      marka dosyaları kaynak olarak gömülür — buradakiler yerleşimi ve ölçeği değerlendirmek için.
+    </p>
+    <p>
+      Yakma hızı ve tükeniş tahmini değerleri <b>örnek</b>; yüzdeler, geri sayımlar ve plan
+      gerçek. O iki metrik henüz hesaplanmıyor — istersen sağlayıcıya hiç dokunmadan
+      eklenebilir.
+    </p>
+  </div>
+
+</div>
