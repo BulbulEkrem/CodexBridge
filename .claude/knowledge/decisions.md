@@ -132,7 +132,7 @@ Aşağıdakilerin tamamı gerçek makinede, gerçek OAuth kimlikleriyle gözlend
   `Shell_TrayWnd` ve yeni band HWND'si kuruldu, konum yeni çubuğa göre yeniden hesaplandı,
   krom sıyırma korundu (`style=0x54000000`).
 
-### AÇIK BUG — `_lastGood` diskten beslenmiyor
+### DÜZELTİLDİ — `_lastGood` diskten beslenmiyordu
 - `AggregateUsageSource._lastGood` yalnızca nesne ömrü boyunca yaşıyor. `AppHost.Start()` diskteki
   snapshot'ı yüzeylere gönderiyor ama bu sözlüğe BESLEMİYOR. Ayrıca `AppHost.ReloadSettings()`
   yepyeni bir `AggregateUsageSource` kurduğu için ayar kaydetmek de sözlüğü sıfırlıyor.
@@ -140,7 +140,16 @@ Aşağıdakilerin tamamı gerçek makinede, gerçek OAuth kimlikleriyle gözlend
   bakacak değer bulamıyor, `CreateError` boş satırını dönüyor — band `—` gösteriyor ve bu boş satır
   diskteki iyi snapshot'ın ÜZERİNE yazılıyor. Canlı olarak Claude 429'unda gözlendi.
 - README ve bu belgedeki "son bilinen değer korunuyor, updatedAt eskide bırakılıyor" vaadi bu iki
-  durumda tutmuyor. **Düzeltilmedi.**
+  durumda tutmuyordu.
+- **Düzeltme (aynı gün):** `AggregateUsageSource.SeedLastGood(snapshot)`. `AppHost.Start()` diskteki
+  snapshot'ı yüzeylere göndermenin yanında toplayıcıya da besliyor; `ReloadSettings()` yeni
+  toplayıcıyı `Current ?? Store.Read()` ile besliyor. Seed yalnızca gerçekten veri taşıyan satırları
+  alır — hata satırını devralmak bir hatayı sonsuza kadar "son bilinen değer" diye saklamak olurdu —
+  ve mevcut girişi ezmez, çünkü canlı çekim her zaman diskten üstündür.
+- **SINIR:** düzeltmenin canlı yolu makinede ÜRETİLEMEDİ. Sağlayıcıyı gerçekten hataya düşürmek
+  kullanıcının CLI kimlik dosyalarına ya da makinenin ağına dokunmayı gerektiriyordu (uygulamaya özel
+  güvenlik duvarı kuralı için yönetici hakkı yok). 8 assertion ile kapsandı ve uygulamanın
+  regresyonsuz çalıştığı doğrulandı; bozuk davranışın canlı tekrarı yapılmadı.
 
 ### Test ortamı notu
 - Tepsi/menü testleri sentetik fare olaylarıyla yapıldı. `SetCursorPos` XAML adasında hover
