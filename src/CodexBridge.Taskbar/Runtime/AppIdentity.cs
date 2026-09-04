@@ -22,13 +22,24 @@ internal static class AppIdentity
 
     public const string DisplayName = "CodexBridge";
 
-    /// <summary>Süreç kimliğini ayarlar ve kabuk kayıtlarını yazar. Başarısızlık ölümcül değil:
-    /// bildirimler yine çalışır, sadece adı/ikonu daha çirkin görünür.</summary>
+    /// <summary>Süreç kimliğini ayarlar. Pencere oluşturulmadan ÖNCE çağrılmalı — görev çubuğu
+    /// gruplaması bu değere bakar.</summary>
     public static void Apply()
     {
         try { SetCurrentProcessExplicitAppUserModelID(Aumid); }
         catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException) { /* eski Windows */ }
+    }
 
+    /// <summary>Kabuk kayıtlarını (görünen ad + ikon) yazar. Başarısızlık ölümcül değil:
+    /// bildirimler yine çalışır, sadece adı/ikonu daha çirkin görünür.
+    ///
+    /// <para><b>Sıra önemli:</b> bu, <c>AppNotificationManager.Register()</c>'DAN SONRA
+    /// çağrılmalı. Register() aynı AUMID anahtarını kendi <c>CustomActivator</c> değeriyle
+    /// yeniden yazıyor ve bizim <c>IconUri</c>'mizi düşürüyor — canlı testte bildirim kartı
+    /// jenerik ikonla çıktığı için fark edildi. Önce biz yazarsak emeğimiz boşa gidiyor.</para>
+    /// </summary>
+    public static void WriteShellRegistration()
+    {
         try
         {
             using var key = Registry.CurrentUser.CreateSubKey($@"Software\Classes\AppUserModelId\{Aumid}", writable: true);

@@ -1,5 +1,6 @@
 using CodexBridge.Taskbar.Notifications;
 using CodexBridge.Taskbar.Runtime;
+using CodexBridge.Taskbar.Tray;
 using CodexBridge.Taskbar.Taskbar;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -41,6 +42,10 @@ public partial class App : Application
         _notifications = new NotificationService(_host);
         _notifications.OpenSettingsRequested += ShowSettings;
         _notifications.Start();
+
+        // Kabuk kayıtları bilerek BURADA: Register() aynı AUMID anahtarını yeniden yazıyor,
+        // önce yazsaydık ikonumuz düşerdi (bkz. AppIdentity.WriteShellRegistration).
+        AppIdentity.WriteShellRegistration();
 
         // Explorer-restart hayatta kalma: gözcü UI iş parçacığında oluşturulur ki mesajları
         // ana mesaj döngüsünde alsın; tetiklenince band'ı UI iş parçacığında yeniden kurarız.

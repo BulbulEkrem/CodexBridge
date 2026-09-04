@@ -70,3 +70,83 @@ Giriş formatı: `## YYYY-MM-DD — <aşama>` başlığıyla kısa maddeler.
 - **Ortam notu:** bu oturum Linux konteynerde geçti. .NET 9 SDK kuruldu; Core/SelfTest/Host/
   ClaudeData/JsHost derlendi ve 147 assertion çalıştırıldı. WinUI ve WindowsAppSDK kodu Linux'ta
   derlenemez — Roslyn ile sözdizimi ayrıştırması temiz ama **Windows'ta derlenmedi ve çalıştırılmadı.**
+
+## 2026-09-04 — Windows yüzeyleri CANLI TEST (kullanıcı makinesinde)
+
+Önceki oturum Linux konteynerdeydi; WinUI kodu ilk kez burada derlendi ve çalıştırıldı.
+Aşağıdakilerin tamamı gerçek makinede, gerçek OAuth kimlikleriyle gözlendi.
+
+### Derleme
+- `CodexBridge.Taskbar` iki gerçek hatayla patlıyordu: `Tray/TrayIcon.cs` klasör-namespace kuralının
+  dışına çıkmış (`CodexBridge.Taskbar` demiş, `IconFactory` ise `...Tray`'de), ve
+  `NotificationService.BuildProgressData` `static` olduğu halde instance `NextSequence`'i çağırıyordu.
+  Üçüncü hata (`XamlCompiler MSB3073`) bu ikisinin türeviydi, kendiliğinden kayboldu.
+- **Veri katmanı gerçekten canlı:** band, tepsi ve bildirim gerçek Claude + Codex kotasını gösteriyor.
+  Süreç `api.anthropic.com` ve `chatgpt.com`'a TLS bağlantısı açıyor; ayrı bir süreçten
+  (`codexbridge-claudedata.exe`) çekilen değerler band'dakiyle birebir aynı.
+
+### Band
+- **Opak siyah zemin:** kök `Grid`'in `Background="Transparent"` olması YETMİYOR. Backdrop atanmamış
+  bir WinUI penceresinin kompozisyon kökü opak siyah boyuyor. Çözüm `WinUIEx.TransparentTintBackdrop`
+  (paket zaten referanslıydı, kullanılmıyordu).
+- **Win11'de "boş sol alan" sorgulanamaz:** görev çubuğunun TÜM görsel içeriği (hava durumu, Start,
+  arama, uygulama düğmeleri) çubuk genişliğinde tek bir XAML adasında
+  (`Windows.UI.Composition.DesktopWindowContentBridge`, x=0..ekran genişliği) çiziliyor. Sabit sol
+  ofset band'ı doğrudan hava durumu widget'ının üstüne oturtuyordu; opak zemin bunu gizliyordu,
+  zemin saydamlaşınca ortaya çıktı. Ölçülebilir tek sınır ortadaki kümenin sol kenarı —
+  `ReBarWindow32` ve gizli `Start` penceresi ikisi de oradan başlıyor ve görünen Start düğmesiyle
+  birebir uyuşuyor. Band o kenara yaslanıyor (`x = clusterLeft - w - margin`), küme sola dayalıysa
+  eski davranışa düşülüyor.
+
+### Bildirimler
+- **`AppNotificationManager.Register()` → `0x80040154 REGDB_E_CLASSNOTREG`.** Kod hatası değil:
+  `Microsoft.WindowsAppRuntime.1.8` framework paketi kuruluydu (WinUI o yüzden çalışıyordu) ama
+  `WinAppRuntime.Singleton` ve DDLM paketleri hiç kurulmamıştı. Paketsiz uygulamada bu API'nin COM
+  sunucusunu Singleton barındırıyor. Bunlar NuGet'ten GELMİYOR; `WindowsAppRuntimeInstall-x64.exe`
+  ile geliyor. **Dağıtım gereksinimi:** CodexBridge'i kuran her makinede bu runtime gerekli.
+- Hata `catch (Exception)` tarafından sessizce yutuluyordu ve `_registered=false` olunca `OnSnapshot`
+  en başta `return` ediyordu — tek bir bildirim bile gönderilmeden. Sessiz yutma teşhisi geciktirdi.
+- **Sıra kuralı:** `AppIdentity`'nin kabuk kayıtlarını yazması `Register()`'DAN SONRA olmalı.
+  Register() aynı AUMID anahtarını kendi `CustomActivator` değeriyle yeniden yazıp bizim
+  `IconUri`'mizi düşürüyor; bildirim kartı jenerik ikonla çıkıyordu. `Apply()` (süreç AUMID'i,
+  pencereden önce) ve `WriteShellRegistration()` (kayıtlar, Register'dan sonra) ayrıldı.
+
+### Tepsi ikonu
+- **Menü açık temada çiziliyordu.** `TrackPopupMenu` sistem koyu temasını izlemiyor; kabuğun kendi
+  menüleri uxtheme'in ordinalle dışa açılmış belgelenmemiş fonksiyonlarını çağırıyor:
+  `#135 SetPreferredAppMode(AllowDark)` + `#136 FlushMenuThemes()`. Ordinal kayma riskine karşı
+  try/catch içinde; başarısızlıkta menü eski görünümüne döner. Owner-draw alternatifi üç öğelik
+  menü için orantısız bulundu.
+- **`Reregister()` eksikti — Explorer restart sonrası ikon GÖRÜNÜYOR ama ÖLÜ.** İkon `NIF_GUID` ile
+  kayıtlı; Explorer yeniden başlayınca kabukta o GUID'e ait bayat kayıt kalıyor ve üstüne `NIM_ADD`
+  oturmuyor. Görünen ikon kabuğun eski girdisi, bizim penceremize bağlı değil. Ayrıca
+  `NIM_SETVERSION` yeniden gönderilmezse sürüm 4 sözleşmesi (`NIF_SHOWTIP`, olay kodunun lParam alt
+  yarısında gelmesi) kurulmuyor. Doğru sıra: **`NIM_DELETE` → `NIM_ADD` → `NIM_SETVERSION`.**
+  Kontrollü deneyle üretildi: taze süreçte menü açılıyor, Explorer restart sonrası açılmıyor,
+  düzeltmeyle tekrar açılıyor + tooltip geri geliyor.
+- **Ders:** ikonun görünür olması çalıştığı anlamına gelmiyor. Explorer-restart testinde önce
+  yalnızca görünürlüğe bakıp "geri geldi" denmişti; yanlıştı.
+
+### Explorer-restart (regresyon, GEÇTİ)
+- Süreç aynı pid'de hayatta kaldı, `Window.Close()` segfault'u (exit 139) tekrarlamadı. Yeni
+  `Shell_TrayWnd` ve yeni band HWND'si kuruldu, konum yeni çubuğa göre yeniden hesaplandı,
+  krom sıyırma korundu (`style=0x54000000`).
+
+### AÇIK BUG — `_lastGood` diskten beslenmiyor
+- `AggregateUsageSource._lastGood` yalnızca nesne ömrü boyunca yaşıyor. `AppHost.Start()` diskteki
+  snapshot'ı yüzeylere gönderiyor ama bu sözlüğe BESLEMİYOR. Ayrıca `AppHost.ReloadSettings()`
+  yepyeni bir `AggregateUsageSource` kurduğu için ayar kaydetmek de sözlüğü sıfırlıyor.
+- Sonuç: süreç yeniden başladıktan ya da ayarlar kaydedildikten sonra ilk çekim patlarsa `Degrade()`
+  bakacak değer bulamıyor, `CreateError` boş satırını dönüyor — band `—` gösteriyor ve bu boş satır
+  diskteki iyi snapshot'ın ÜZERİNE yazılıyor. Canlı olarak Claude 429'unda gözlendi.
+- README ve bu belgedeki "son bilinen değer korunuyor, updatedAt eskide bırakılıyor" vaadi bu iki
+  durumda tutmuyor. **Düzeltilmedi.**
+
+### Test ortamı notu
+- Tepsi/menü testleri sentetik fare olaylarıyla yapıldı. `SetCursorPos` XAML adasında hover
+  tetiklemiyor; `SendInput` (MOUSEEVENTF_ABSOLUTE|MOVE) gerekiyor. Taşma menüsü chevron tıklamasıyla
+  TOGGLE oluyor — açık/kapalı durumu önce sorgulanmalı, körlemesine tıklanmamalı.
+- **Körlemesine koordinat tıklaması ayarları bozdu:** otomasyon "Ayarlar…"ı açıp Kaydet'e basmış;
+  `settings.json` `trayIconEnabled:false`, `notificationsEnabled:false`, `minRefreshSeconds:720`
+  ile OLUŞTU. Dosya silinip varsayılanlara dönüldü. `minRefreshSeconds` `NextDelay()`'i YUKARI
+  kelepçeliyor — 720 iken 5 dakikalık karar 12 dakikaya çıkıyordu; bu bug değil, ayar.

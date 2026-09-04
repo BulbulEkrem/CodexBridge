@@ -146,7 +146,7 @@ public sealed class NotificationService(AppHost host) : IDisposable
     /// olarak mümkün ama yalnızca ilk çubuk veri bağlamayla güncellenebildiği için, güncellenen
     /// çubuğun her zaman "önemli olan" olması gerekiyor.
     /// </summary>
-    private static AppNotificationProgressData BuildProgressData(
+    private AppNotificationProgressData BuildProgressData(
         ProviderRow row, RateWindow? session, RateWindow? weekly, DateTimeOffset generatedAt)
     {
         var worst = row.MostRestrictive() ?? session ?? weekly!;

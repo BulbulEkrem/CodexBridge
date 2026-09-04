@@ -56,6 +56,12 @@ public sealed partial class MainWindow : Window
         _host = host;
         InitializeComponent();
 
+        // Kök Grid'in Background="Transparent" olması TEK BAŞINA yetmiyor: backdrop atanmamış
+        // bir WinUI penceresinin kompozisyon kökü opak siyah boyuyor ve band, görev çubuğunun
+        // üstünde siyah bir kutu gibi duruyor (canlı testte görüldü). Saydam tint backdrop
+        // kompozisyon zincirini saydam yapar, altındaki görev çubuğu görünür.
+        SystemBackdrop = new WinUIEx.TransparentTintBackdrop();
+
         // Çubuğa oturacağı için pencere kromu istemiyoruz: başlık çubuğu + min/büyüt/kapat
         // düğmeleri tamamen kaldırılır. ExtendsContentIntoTitleBar TEK BAŞINA yetmiyor —
         // canlı testte tespit edildi; presenter ayarı ve Win32 stil sıyırma da gerekiyor.

@@ -5,7 +5,7 @@ using CodexBridge.Core.Rendering;
 using CodexBridge.Taskbar.Runtime;
 using static CodexBridge.Taskbar.Interop.NativeMethods;
 
-namespace CodexBridge.Taskbar;
+namespace CodexBridge.Taskbar.Tray;
 
 /// <summary>
 /// Bildirim alanı (tepsi) ikonu — band'ın <b>yedek yüzeyi</b>.
@@ -45,6 +45,8 @@ public sealed class TrayIcon : IDisposable
     /// <summary>Kullanıcı çıkışı istedi.</summary>
     public event Action? QuitRequested;
 
+    private static bool _menuThemeApplied;
+
     public TrayIcon(AppHost host)
     {
         _host = host;
@@ -70,10 +72,40 @@ public sealed class TrayIcon : IDisposable
 
     /// <summary>Explorer yeniden başladıktan sonra ikonu tekrar kaydeder. Tepsi ikonları
     /// Explorer ile birlikte kaybolur; <c>TaskbarCreated</c> yayınında geri eklenmeleri gerekir.</summary>
+    /// <summary>
+    /// Explorer yeniden başladıktan sonra ikonu kabuğa geri koyar.
+    ///
+    /// <para>Tek başına <c>NIM_ADD</c> YETMİYOR — canlı testte üretildi: ikon görünüyor ama
+    /// tıklamalar hiçbir yere gitmiyor. İki sebebi var:</para>
+    ///
+    /// <list type="number">
+    ///   <item>İkonu <c>NIF_GUID</c> ile kaydediyoruz. Kabukta o GUID'e ait ESKİ kayıt hâlâ
+    ///   duruyor; üstüne <c>NIM_ADD</c> denemek başarısız oluyor ve görünen ikon kabuğun
+    ///   bayat girdisi oluyor — bizim penceremize bağlı değil. Önce <c>NIM_DELETE</c> ile
+    ///   o girdiyi temizlemek gerekiyor.</item>
+    ///
+    ///   <item><c>NIM_SETVERSION</c> yeniden gönderilmezse sürüm 4 geri çağrı sözleşmesi
+    ///   kurulmuyor; <c>NIF_SHOWTIP</c> ve olay kodunun lParam'ın alt yarısında gelmesi
+    ///   buna bağlı.</item>
+    /// </list>
+    ///
+    /// <para><c>NIM_DELETE</c>'in başarısız olması normal (silinecek kayıt olmayabilir);
+    /// dönüş değerine bakılmıyor.</para>
+    /// </summary>
     public void Reregister()
     {
+        if (_hwnd == IntPtr.Zero) return;
+
+        var stale = NewData();
+        stale.uFlags = NIF_GUID;
+        Shell_NotifyIconW(NIM_DELETE, ref stale);
+
         _registered = false;
         AddOrModify(NIM_ADD);
+
+        var version = NewData();
+        version.uVersion = NOTIFYICON_VERSION_4;
+        Shell_NotifyIconW(NIM_SETVERSION, ref version);
     }
 
     private void OnSnapshot(DashboardSnapshot snapshot)
@@ -192,8 +224,29 @@ public sealed class TrayIcon : IDisposable
         return DefWindowProcW(hWnd, msg, wParam, lParam);
     }
 
+    /// <summary>Menülerin sistem temasını izlemesini sağlar. Bkz. NativeMethods.Tray'deki
+    /// ordinal notu — belgelenmemiş API olduğu için başarısızlığı sessizce yutuluyor,
+    /// tek kaybı menünün açık temada çizilmesi.</summary>
+    private static void EnsureMenuTheme()
+    {
+        if (_menuThemeApplied) return;
+        _menuThemeApplied = true;
+
+        try
+        {
+            SetPreferredAppMode(PreferredAppModeAllowDark);
+            FlushMenuThemes();
+        }
+        catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException)
+        {
+            // Ordinal kaymış ya da uxtheme yok: menü eski görünümüyle çalışmaya devam eder.
+        }
+    }
+
     private void ShowContextMenu()
     {
+        EnsureMenuTheme();
+
         IntPtr menu = CreatePopupMenu();
         if (menu == IntPtr.Zero) return;
 

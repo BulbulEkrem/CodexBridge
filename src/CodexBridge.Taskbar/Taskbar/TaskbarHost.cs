@@ -28,16 +28,32 @@ internal static class TaskbarHost
 
         GetWindowRect(taskbar, out RECT tb);
         int y = 0, h = tb.Height;
+        int clusterLeft = -1;
         if (rebar != IntPtr.Zero && GetWindowRect(rebar, out RECT rb))
         {
             y = rb.Top - tb.Top;
             h = rb.Height;
+            clusterLeft = rb.Left - tb.Left;
         }
 
         float scale = GetDpiForWindow(bandHwnd) / 96f;
         if (scale <= 0) scale = 1f;
-        int x = (int)(leftOffsetDips * scale);
         int w = (int)(widthDips * scale);
+        int margin = (int)(leftOffsetDips * scale);
+
+        // Windows 11'de görev çubuğunun TÜM görsel içeriği (hava durumu, Start, arama, uygulama
+        // düğmeleri) çubuğun tam genişliğini kaplayan tek bir XAML adasında
+        // (Windows.UI.Composition.DesktopWindowContentBridge) çiziliyor — yani "boş sol alan"
+        // ayrı bir pencere değil, sorgulanamıyor. Sabit sol ofset kullanmak band'ı doğrudan hava
+        // durumu widget'ının üstüne oturtuyordu (canlı testte görüldü; opak siyah zemin bunu
+        // gizliyordu, zemin saydamlaşınca ortaya çıktı).
+        //
+        // Ölçülebilir tek sınır ortadaki kümenin sol kenarı: ReBarWindow32 ve gizli "Start"
+        // penceresi ikisi de oradan başlıyor. Band'ı o kenara YASLIYORUZ — soldaki widget ne kadar
+        // genişse genişlesin üstüne binmiyoruz, küme büyüyüp küçüldükçe band onu takip ediyor.
+        // Küme sola dayalıysa (ortalama kapalı) solda boşluk kalmaz → eski davranışa düşülür.
+        int x = clusterLeft > 0 ? clusterLeft - w - margin : margin;
+        if (x < margin) x = margin;
 
         SetWindowPos(bandHwnd, IntPtr.Zero, x, y, w, h,
             SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOZORDER | SWP_SHOWWINDOW);

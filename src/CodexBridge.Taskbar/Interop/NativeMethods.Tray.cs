@@ -142,4 +142,26 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool SetForegroundWindow(IntPtr hWnd);
+
+    // ---- Menü koyu teması ----
+    //
+    // TrackPopupMenu her zaman AÇIK temada çizer; sistem koyu temadayken tepsi menümüz beyaz
+    // çıkıyordu (canlı testte görüldü). Kabuğun kendi menüleri koyu görünüyor çünkü uxtheme'in
+    // ORDİNALLE dışa açılmış, belgelenmemiş iki fonksiyonunu çağırıyorlar. Belgelenmemiş olması
+    // riski: bir Windows sürümünde ordinal kayabilir. Bu yüzden çağrı try/catch içinde ve
+    // başarısızlığı ölümcül değil — menü yalnızca eski görünümüne döner.
+    //
+    // Tek alternatif menüyü owner-draw yapmaktı; her öğeyi elle çizmek bu kadar küçük bir menü
+    // için orantısız.
+
+    /// <summary>uxtheme ordinal 135. 0=Default, 1=AllowDark, 2=ForceDark, 3=ForceLight.</summary>
+    internal const int PreferredAppModeAllowDark = 1;
+
+    [LibraryImport("uxtheme.dll", EntryPoint = "#135", SetLastError = false)]
+    internal static partial int SetPreferredAppMode(int appMode);
+
+    /// <summary>uxtheme ordinal 136. Mod değiştikten sonra menü temalarının yeniden
+    /// okunmasını sağlar; çağrılmazsa değişiklik ilk menüde etkisiz kalır.</summary>
+    [LibraryImport("uxtheme.dll", EntryPoint = "#136", SetLastError = false)]
+    internal static partial void FlushMenuThemes();
 }
