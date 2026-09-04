@@ -184,6 +184,22 @@ Check("geri sayım: 45 dakika → '45dk'", RateWindowFactory.FormatCountdown(t0.
 Check("geri sayım: geçmiş → 'şimdi'", RateWindowFactory.FormatCountdown(t0.AddMinutes(-1), t0) == "şimdi");
 Check("geri sayım: reset yoksa null", RateWindowFactory.FormatCountdown(null, t0) is null);
 
+// --- Saat:dakika geri sayımı (band'ın pill satırı) ---
+Check("saat geri sayımı: 5sa 13dk → '5:13'",
+    RateWindowFactory.FormatClockCountdown(t0.AddHours(5).AddMinutes(13), t0) == "5:13");
+Check("saat geri sayımı: dakika iki hane → '0:07'",
+    RateWindowFactory.FormatClockCountdown(t0.AddMinutes(7), t0) == "0:07");
+Check("saat geri sayımı: tam saat → '2:00'",
+    RateWindowFactory.FormatClockCountdown(t0.AddHours(2), t0) == "2:00");
+Check("saat geri sayımı: saniyeler yukarı yuvarlanıyor (4dk30sn → '0:05')",
+    RateWindowFactory.FormatClockCountdown(t0.AddMinutes(4).AddSeconds(30), t0) == "0:05");
+Check("saat geri sayımı: 24 saati aşınca güne çevirmiyor → '26:04'",
+    RateWindowFactory.FormatClockCountdown(t0.AddHours(26).AddMinutes(4), t0) == "26:04");
+Check("saat geri sayımı: geçmiş → '0:00'",
+    RateWindowFactory.FormatClockCountdown(t0.AddMinutes(-1), t0) == "0:00");
+Check("saat geri sayımı: reset yoksa null (segment atlanır)",
+    RateWindowFactory.FormatClockCountdown(null, t0) is null);
+
 // --- En kısıtlayıcı pencere: band'ın pill rengini belirleyen kural ---
 var twoWindows = new List<CodexBridge.Core.Dashboard.RateWindow>
 {

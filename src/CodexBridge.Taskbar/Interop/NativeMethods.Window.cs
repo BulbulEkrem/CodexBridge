@@ -47,6 +47,13 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool DestroyWindow(IntPtr hWnd);
 
+    /// <summary>Tanıtıcı hâlâ yaşayan bir pencereye mi ait. Explorer öldüğünde band'ın HWND'si
+    /// de yok oluyor; ölü pencereye dokunmak yakalanamayan native çökme veriyor, o yüzden
+    /// zamanlayıcı gibi kendi başına çalışan işler önce bunu sormalı.</summary>
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool IsWindow(IntPtr hWnd);
+
     [LibraryImport("user32.dll")]
     internal static partial IntPtr DefWindowProcW(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 

@@ -19,6 +19,34 @@ public static class RateWindowFactory
         };
     }
 
+    /// <summary>
+    /// Geri sayımı saat:dakika biçiminde verir — <c>5:13</c> = 5 saat 13 dakika.
+    ///
+    /// <para>Band'ın pill'i için. Oradaki metin 9.5pt ve satır zaten yüzdeleri taşıyor;
+    /// <see cref="FormatCountdown"/>'ın <c>5s 13dk</c> biçimi iki kat yer kaplıyor. Amaç tek
+    /// bakışta kaç dakika kaldığını okumak, o yüzden dakika HER ZAMAN iki hane
+    /// (<c>0:07</c>, <c>0:09</c>) — tek haneli yazarsak <c>0:7</c> okunurken duraksatır.</para>
+    ///
+    /// <para>Saat taşmıyor: 26 saat kalmışsa <c>26:04</c> yazar, güne çevirmez. Bu biçim
+    /// oturum penceresi için kullanılıyor (birkaç saat); haftalık pencerede kullanılırsa
+    /// sayı büyür ama yanlış olmaz.</para>
+    ///
+    /// <para>Sıfırlanma zamanı bilinmiyorsa <c>null</c> — çağıran segmenti tamamen atlamalı,
+    /// yer tutucu yazmamalı.</para>
+    /// </summary>
+    public static string? FormatClockCountdown(DateTimeOffset? resetAt, DateTimeOffset now)
+    {
+        if (resetAt is not { } reset) return null;
+
+        var left = reset - now;
+        if (left <= TimeSpan.Zero) return "0:00";
+
+        // Saniyeleri yukarı yuvarla: 4dk 30sn kalmışken "0:04" yazıp kullanıcıyı erken
+        // rahatlatmaktansa "0:05" demek daha dürüst.
+        int totalMinutes = (int)Math.Ceiling(left.TotalMinutes);
+        return $"{totalMinutes / 60}:{totalMinutes % 60:D2}";
+    }
+
     /// <summary>Süreyi kısa Türkçe geri sayıma çevirir: <c>2s 58dk</c>, <c>3g 4sa</c>, <c>12dk</c>.</summary>
     public static string? FormatCountdown(DateTimeOffset? resetAt, DateTimeOffset now)
     {

@@ -32,7 +32,10 @@ namespace CodexBridge.Taskbar;
 public sealed partial class MainWindow : Window
 {
     /// <summary>Pill başına ayrılan yaklaşık genişlik (dip). Band genişliği buradan hesaplanır.</summary>
-    private const int PillWidthDips = 104;
+    // 104 iken alt satır yalnızca "53 · 37" taşıyordu. Geri sayım eklenince ("53 · 37 · 2:55")
+    // metin genişledi ve çubuklar pill'in sağından kırpıldı — canlı testte görüldü. 130,
+    // 9.5pt'lik en uzun makul satırı ("100 · 100 · 26:04") artı çubukları alıyor.
+    private const int PillWidthDips = 130;
     private const int BandLeftOffsetDips = 12;
     private const double BarTrackWidth = 38;
 
@@ -50,6 +53,10 @@ public sealed partial class MainWindow : Window
     private readonly IntPtr _originalProc;
 
     private int _bandWidthDips = PillWidthDips * 2 + BandLeftOffsetDips;
+
+    // Geri sayım tikleyicisi ve son çizilen snapshot: tik yeni veri beklemeden yeniden çizer.
+    private readonly DispatcherQueueTimer _tick;
+    private DashboardSnapshot? _last;
 
     public MainWindow(AppHost host)
     {
@@ -87,6 +94,30 @@ public sealed partial class MainWindow : Window
 
         _host.Updated += OnSnapshot;
         if (_host.Coordinator.Current is { } current) Render(current);
+
+        // Geri sayım yalnızca yenileme geldiğinde çizilseydi 30 dakikaya kadar bayat kalırdı
+        // (AdaptiveRefresh aralığı o kadar açılabiliyor) — "kaç dakika kaldı" sorusunun cevabı
+        // olarak işe yaramazdı. Saat bağımsız tikliyor. Aynı tik band'ın bayatlık soluklaşmasını
+        // da tazeliyor; o da eskiden yalnızca yenilemede güncelleniyordu.
+        _tick = _queue.CreateTimer();
+        _tick.Interval = TimeSpan.FromSeconds(20);
+        _tick.IsRepeating = true;
+        _tick.Tick += OnTick;
+        _tick.Start();
+    }
+
+    /// <summary>Explorer öldüğünde bu pencerenin HWND'si yok olur ama zamanlayıcı UI kuyruğunda
+    /// yaşamaya devam eder. Ölü pencerenin XAML ağacına dokunmak yakalanamayan çökme demek
+    /// (bkz. Explorer-restart notu), o yüzden önce tanıtıcıyı doğrula ve kendini durdur.</summary>
+    private void OnTick(DispatcherQueueTimer sender, object args)
+    {
+        if (!IsWindow(_hwnd))
+        {
+            sender.Stop();
+            return;
+        }
+
+        if (_last is { } snapshot) Render(snapshot);
     }
 
     /// <summary>Band'ı görev çubuğuna parent'lar. <see cref="App"/> tarafından çağrılır.</summary>
@@ -117,6 +148,8 @@ public sealed partial class MainWindow : Window
 
     private void Render(DashboardSnapshot snapshot)
     {
+        _last = snapshot;
+
         var settings = _host.Settings;
         var rows = snapshot.Providers
             .Where(p => settings.IsEnabled(p.Id))
@@ -162,7 +195,7 @@ public sealed partial class MainWindow : Window
 
         var numbers = new TextBlock
         {
-            Text = hasData ? FormatNumbers(session, weekly) : "—",
+            Text = hasData ? FormatNumbers(session, weekly, DateTimeOffset.UtcNow) : "—",
             FontSize = 9.5,
             Foreground = new SolidColorBrush(Color.FromArgb(0x99, 0xFF, 0xFF, 0xFF)),
             LineHeight = 12,
@@ -225,11 +258,26 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>Dar alanda yüzde işareti gürültü; iki sayı orta noktayla ayrılıyor: <c>47 · 78</c>.</summary>
-    private static string FormatNumbers(RateWindow? session, RateWindow? weekly)
+    /// <summary>
+    /// Pill'in alt satırı: <c>48 · 37 · 5:13</c> — oturum %, haftalık %, ve oturumun
+    /// sıfırlanmasına kalan süre (saat:dakika).
+    ///
+    /// <para>Geri sayım bilerek <b>oturum</b> penceresinden alınıyor, en kısıtlayıcıdan değil:
+    /// kullanıcının tek bakışta bilmek istediği "şu anki sınır ne zaman açılacak". Haftalık
+    /// pencerenin günlerce süren geri sayımı bu satırda bilgi taşımaz; o tooltip'te duruyor.</para>
+    ///
+    /// <para>Sıfırlanma zamanı yoksa segment tamamen atlanır — <c>48 · 37</c> olarak kalır,
+    /// yer tutucu yazılmaz.</para>
+    /// </summary>
+    private static string FormatNumbers(RateWindow? session, RateWindow? weekly, DateTimeOffset now)
     {
         string s = session?.UsedPercent is { } a ? ((int)Math.Round(a)).ToString() : "–";
         string w = weekly?.UsedPercent is { } b ? ((int)Math.Round(b)).ToString() : "–";
-        return $"{s} · {w}";
+
+        string left = RateWindowFactory.FormatClockCountdown(session?.ResetAt, now) is { } c
+            ? $" · {c}" : "";
+
+        return $"{s} · {w}{left}";
     }
 
     private static string BuildTooltip(ProviderRow row, RateWindow? session, RateWindow? weekly)

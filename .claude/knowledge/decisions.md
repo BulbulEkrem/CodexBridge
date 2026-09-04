@@ -159,3 +159,26 @@ Aşağıdakilerin tamamı gerçek makinede, gerçek OAuth kimlikleriyle gözlend
   `settings.json` `trayIconEnabled:false`, `notificationsEnabled:false`, `minRefreshSeconds:720`
   ile OLUŞTU. Dosya silinip varsayılanlara dönüldü. `minRefreshSeconds` `NextDelay()`'i YUKARI
   kelepçeliyor — 720 iken 5 dakikalık karar 12 dakikaya çıkıyordu; bu bug değil, ayar.
+
+## 2026-09-04 — Band'da oturum geri sayımı
+
+- **Ne:** pill'in alt satırı `48 · 37` yerine `48 · 37 · 5:13` — oturum %, haftalık %, ve oturum
+  penceresinin sıfırlanmasına kalan süre `saat:dakika` olarak. Kullanıcı isteği: kaç dakika
+  kaldığını tek bakışta okumak.
+- **Geri sayım OTURUM penceresinden, en kısıtlayıcıdan değil.** Sorulan soru "şu anki sınır ne zaman
+  açılacak"; haftalık pencerenin günlerce süren geri sayımı bu satırda bilgi taşımıyor, o tooltip'te
+  duruyor.
+- **Ayrı biçimlendirici:** `FormatClockCountdown` (`5:13`), mevcut `FormatCountdown`'a (`5s 13dk`)
+  ek olarak. 9.5pt'lik satırda ikincisi iki kat yer kaplıyor. Dakika her zaman iki hane (`0:07`) —
+  `0:7` okurken duraksatıyor. Saniyeler YUKARI yuvarlanıyor: 4dk30sn kalmışken `0:04` yazıp erken
+  rahatlatmaktansa `0:05` demek dürüst. 24 saati aşınca güne çevrilmiyor (`26:04`).
+- **Geri sayım kendi zamanlayıcısıyla tikliyor (20 sn), yenileme döngüsüne binmiyor.** Yalnızca
+  snapshot geldiğinde çizilseydi AdaptiveRefresh aralığı 30 dakikaya açıldığında saat o kadar bayat
+  kalırdı — sorunun cevabı olmaktan çıkardı. Aynı tik band'ın bayatlık soluklaşmasını da tazeliyor;
+  o da eskiden yalnızca yenilemede güncelleniyordu.
+- **Zamanlayıcı ölü pencereye karşı korumalı:** Explorer öldüğünde band'ın HWND'si yok oluyor ama
+  zamanlayıcı UI kuyruğunda yaşıyor. Tik önce `IsWindow(_hwnd)` soruyor ve yanlışsa kendini
+  durduruyor — ölü WinUI penceresinin ağacına dokunmak yakalanamayan çökme demek.
+- **Pill genişliği 104 → 130.** Kullanıcıya "band genişliği değişmez" denmişti, YANLIŞTI: uzayan
+  satır 104 dip'e sığmadı ve çubuklar sağdan kırpıldı (canlı testte görüldü). 130, en uzun makul
+  satırı (`100 · 100 · 26:04`) artı çubukları alıyor. Band 220 → 272 dip; çubukta ~685px boşluk var.
