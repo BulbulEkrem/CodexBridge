@@ -21,6 +21,7 @@ katmanına iki yeni yüz takar.
 | 05 | [Faz 6 — Çerez Katmanı](docs/05-FAZ6-CEREZ-KATMANI.md) |
 | 06 | [Faz 7 — Push Bildirimi + v20 app-bound](docs/06-FAZ7-PUSH-BILDIRIMI.md) |
 | 08 | [Win-CodexBar Analiz Raporu — Özellik Kaynağı](docs/08-WIN-CODEXBAR-ANALIZ-RAPORU.md) |
+| 09 | [Windows Yüzey Araştırması — Bildirim / Görev Çubuğu / Start](docs/09-WINDOWS-YUZEY-ARASTIRMASI.md) |
 
 ## Yapı
 
