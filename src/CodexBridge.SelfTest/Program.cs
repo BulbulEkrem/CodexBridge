@@ -502,6 +502,71 @@ var manyRows = Enumerable.Range(0, 8).Select(i =>
 string longTip = TrayTooltip.Build(tipSnapshot with { Providers = manyRows }, tipSettings, t0);
 Check("ipucu: taşan satırlar atılıyor, sınır korunuyor", longTip.Length <= TrayTooltip.MaxLength);
 
+// --- Widget Adaptive Card ---
+string template = WidgetCard.BuildTemplate();
+using (var tplDoc = System.Text.Json.JsonDocument.Parse(template))
+{
+    Check("widget: şablon geçerli JSON", tplDoc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object);
+    Check("widget: AdaptiveCard tipi", tplDoc.RootElement.GetProperty("type").GetString() == "AdaptiveCard");
+}
+Check("widget: sağlayıcı listesi üzerinde tekrarlanıyor", template.Contains("\"$data\": \"${providers}\""));
+Check("widget: boyuta göre dallanıyor", template.Contains("$host.widgetSize"));
+
+string cardData = WidgetCard.BuildData(tipSnapshot, tipSettings, t0.AddMinutes(4), WidgetSize.Medium);
+using (var dataDoc = System.Text.Json.JsonDocument.Parse(cardData))
+{
+    var root = dataDoc.RootElement;
+    var provArray = root.GetProperty("providers");
+    Check("widget: iki sağlayıcı", provArray.GetArrayLength() == 2);
+
+    var first = provArray[0];
+    Check("widget: sıralama sortKey'e göre (Claude önce)", first.GetProperty("name").GetString() == "Claude");
+    Check("widget: başlık en kısıtlayıcı yüzde", first.GetProperty("headline").GetString() == "%78");
+    Check("widget: %78 → Warning rengi", first.GetProperty("severity").GetString() == "Warning");
+
+    var second = provArray[1];
+    Check("widget: %91 → Attention rengi", second.GetProperty("severity").GetString() == "Attention");
+    Check("widget: oturum ölçeri %18 → Good", second.GetProperty("sessionSeverity").GetString() == "Good");
+
+    string meter = first.GetProperty("sessionMeter").GetString()!;
+    Check("widget: ölçer etiket + blok + yüzde içeriyor",
+        meter.StartsWith("Oturum ") && meter.Contains('▰') && meter.EndsWith("%47"));
+    Check("widget: 10 hücreli ölçerde %47 → 5 dolu blok",
+        meter.Count(c => c == '▰') == 5 && meter.Count(c => c == '▱') == 5);
+
+    Check("widget: veri yaşı alt bilgide", root.GetProperty("footer").GetString() == "4 dk önce");
+}
+
+string smallData = WidgetCard.BuildData(tipSnapshot, tipSettings, t0, WidgetSize.Small);
+using (var smallDoc = System.Text.Json.JsonDocument.Parse(smallData))
+{
+    string smallMeter = smallDoc.RootElement.GetProperty("providers")[0].GetProperty("sessionMeter").GetString()!;
+    Check("widget: küçük boyutta ölçer 6 hücre",
+        smallMeter.Count(c => c == '▰') + smallMeter.Count(c => c == '▱') == 6);
+}
+
+using (var emptyDoc = System.Text.Json.JsonDocument.Parse(
+    WidgetCard.BuildData(null, tipSettings, t0, WidgetSize.Medium)))
+{
+    Check("widget: snapshot yoksa boş liste",
+        emptyDoc.RootElement.GetProperty("providers").GetArrayLength() == 0);
+    Check("widget: snapshot yoksa açıklayıcı alt bilgi",
+        emptyDoc.RootElement.GetProperty("footer").GetString() == "Henüz veri yok");
+}
+
+// Hatalı ama son bilinen değeri olan satır: kullanıcı sayının eski olduğunu görmeli.
+var staleRow = tipSnapshot.Providers[0] with
+{
+    Error = new ProviderError { Code = "RateLimited", Message = "Hız sınırı." },
+};
+using (var staleDoc = System.Text.Json.JsonDocument.Parse(
+    WidgetCard.BuildData(tipSnapshot with { Providers = [staleRow] }, tipSettings, t0, WidgetSize.Medium)))
+{
+    Check("widget: hatada son bilinen değer işaretleniyor",
+        staleDoc.RootElement.GetProperty("providers")[0].GetProperty("detail").GetString()!
+            .Contains("son bilinen değer"));
+}
+
 // Temizlik
 AppPaths.OverrideRoot(null);
 try { Directory.Delete(testRoot, recursive: true); } catch { /* geçici dizin; sızıntı kritik değil */ }

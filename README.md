@@ -33,6 +33,7 @@ src/CodexBridge.Host/      dashboard/v1 HTTP host (ASP.NET Core) — telefon bur
 src/CodexBridge.Taskbar/   WinUI 3 görev çubuğu yüzeyi + parent'lama + Explorer-restart gözcüsü
 src/CodexBridge.JsHost/    Faz 5: ClearScript/V8 ile üst akışın .js sağlayıcılarını çalıştırma
 src/CodexBridge.SelfTest/  Core assertion konsolu (SAC dotnet test'i engellediği için)
+src/CodexBridge.Widget/    Windows Widget sağlayıcısı (Adaptive Cards; paketli COM sunucusu)
 src/CodexBridge.JsProbe/   Faz 5 fizibilite probu (gerçek xai.js V8'de)
 spikes/taskbar-parenting/  Faz 0 kanıt spike'ı (WinForms, Windows SDK gerektirmez)
 phone/android/  phone/ios/ telefon widget iskeleleri (ilgili araç zincirinde derlenir)
@@ -52,20 +53,40 @@ dotnet build src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj -c Debug -p:Plat
 
 ## Durum
 
-- ✅ Faz 0 — görev çubuğu tekniği bu makinede canlı kanıtlandı (WinForms spike), lisanslar MIT
-- ✅ Faz 1 — WinUI yüzey + Explorer-restart gözcüsü, 0 hata derleniyor
-- ✅ Faz 2 — Win-CodexBar `serve` → dashboard/v1 adaptörü (eşleme test edildi; canlı entegrasyon bekliyor)
-- ✅ Faz 3 — dashboard/v1 HTTP host, **curl ile uçtan uca doğrulandı** (401 fails-closed / 200)
-- ✅ Testler — self-test konsolu 22/22 geçiyor
-- 🧩 Faz 4 — iOS/Android widget iskeleleri yazıldı (ilgili araç zincirinde derlenir)
-- ✅ **Faz 5 — kendi sağlayıcı katmanı (ClearScript/V8): gerçek `xai.js` V8'de ÇALIŞTIRILDI**
-- ✅ **Faz 6 — çerez katmanı (Chrome/Edge DPAPI + AES-GCM): kripto doğrulandı** (sentetik veri; v10)
-- ✅ **Faz 7 — push bildirimi (host → telefon): eşik motoru + cihaz kaydı + APNs/FCM dispatcher, 0 hata derleniyor**
-  (SelfTest'te 10 yeni assertion; APNs/FCM kimlik bilgisi yoksa loga düşer)
-- ✅ **v20 app-bound çerez: 32 bayt başlık sıyırma + IsV20 + AppBoundKeyProvider** (JsProbe'da doğrulandı;
-  SYSTEM DPAPI katmanı COM `IElevator` gerektirir → gelecek tur)
-- ⏳ **Canlı testler (kullanıcı makine başında olunca):** band çubukta görünüyor mu +
-  Explorer-restart; telefon cihazda derlenmesi; JS eklentilerin/çerezlerin GERÇEK sağlayıcıya bağlanması;
-  gerçek `.p8`/service account ile cihaza push teslimi
+### Bağımsız veri katmanı (bu ortamda derlendi ve test edildi ✓)
+- **Claude** — `~/.claude/.credentials.json` → `api.anthropic.com/api/oauth/usage`.
+  Token yenileme bizde; yenilenen token **yalnızca kendi DPAPI korumalı önbelleğimizde**,
+  kullanıcının CLI dosyasına asla yazılmıyor.
+- **Codex** — `~/.codex/auth.json` → `chatgpt.com/backend-api/wham/usage`.
+  Token yenilenmiyor; onu CLI yapıyor, 401'de `codex login`e yönlendiriliyor.
+- İkisi de yalnızca GET: **abonelik kotasından bir şey düşmüyor.**
+- 429'da `Retry-After`'a uyuluyor, yoksa 2→30 dk üstel geri çekilme.
+- Bir sağlayıcının hatası diğerini düşürmüyor; son bilinen değer korunuyor ve
+  `updatedAt` bilerek eskide bırakılıyor ki yüzeyler "veri yaşı"nı dürüstçe göstersin.
+- Tek yenileme noktası (`RefreshCoordinator`) + atomik `snapshot.json`.
+- **SelfTest: 147 assertion, tümü geçiyor.**
 
-Ayrıntı: [docs/03-FAZ2-3-VE-TELEFON.md](docs/03-FAZ2-3-VE-TELEFON.md)
+### Windows yüzeyleri (yazıldı, Windows'ta DERLENMEDİ ⏳)
+- **Görev çubuğu bandı** — B varyantı: sağlayıcı başına tek pill, içinde iki çubuk
+  (üst oturum, alt haftalık); pill rengi **en kısıtlayıcı** pencereden.
+- **Tepsi ikonu** — band'ın yedeği. 32×32 çizim Core'da ve test edilmiş;
+  128 karakterlik tooltip sınırına sığdırma test edilmiş.
+- **Bildirim** — canlı kota kartı (`UpdateAsync` ile yerinde tazelenen ilerleme çubuğu)
+  + eşik uyarıları + kritik geçişte `Urgent` senaryosu.
+- **Ayarlar penceresi** — sağlayıcı aç/kapa, kimlik durumu, eşikler, otomatik başlatma.
+- **Widget sağlayıcısı** — Adaptive Cards içeriği Core'da ve test edilmiş; COM host'u ve
+  sparse package manifest'i yazıldı, **paketleme Windows'ta tamamlanmalı**.
+
+### Önceki fazlar
+- ✅ Faz 0/1 — görev çubuğu tekniği + Explorer-restart gözcüsü, kullanıcı makinesinde canlı doğrulandı
+- ✅ Faz 3 — `dashboard/v1` HTTP host, curl ile uçtan uca doğrulandı (401 fails-closed / 200)
+- ✅ Faz 5 — JS sağlayıcı katmanı (ClearScript/V8), gerçek `xai.js` çalıştırıldı
+- ✅ Faz 6 — çerez katmanı kripto doğrulandı (sentetik veri; v10)
+- ✅ Faz 7 — push (APNs/FCM) + v20 app-bound çerez başlık sıyırma
+- 🧩 Faz 4 — iOS/Android widget iskeleleri (ilgili araç zincirinde derlenir)
+
+### Canlı test bekleyenler (kullanıcı makinesinde)
+Band'ın B varyantı, tepsi ikonu ve tooltip'i, bildirim kartı ve eşik uyarıları,
+widget paketleme ve panoda görünme, gerçek Claude/Codex kimlikleriyle uçtan uca çekim.
+
+Ayrıntı: [docs/07-CANLI-TEST-KONTROL-LISTESI.md](docs/07-CANLI-TEST-KONTROL-LISTESI.md)

@@ -39,3 +39,34 @@ Giriş formatı: `## YYYY-MM-DD — <aşama>` başlığıyla kısa maddeler.
 - **Sonuç marshalling:** ScriptObject dolaşmak yerine JS'de `JSON.stringify(result)` → C#'ta System.Text.Json parse (Date'ler otomatik ISO string). Çok daha sağlam.
 - **Async:** mock/senkron host.http ile promise'ler `engine.Execute` sonrası microtask drenajında çözülür; ayrı event loop gerekmez. `V8ScriptEngineFlags.EnableDateTimeConversion`.
 - ClearScript.V8 7.4.5 + Native.win-x64; native Microsoft-imzalı olduğundan SAC'a takılmaz (kendi apphost exe'mizden yüklenir).
+
+## 2026-09-04 — Bağımsız veri katmanı + Windows yüzeyleri
+- **Kapsam kararları (kullanıcı):** iki abonelik (Claude + Codex), her birinde oturum + haftalık
+  pencere; band **B varyantı** (sağlayıcı başına tek pill, ikişer çubuk); veri katmanı **bağımsız**
+  (Win-CodexBar'a bağlanmıyoruz); Windows önce; sparse package **evet**; yüzeyler =
+  band + tepsi + bildirim + widget + minimal ayarlar.
+- **Token yakma sorusu kapandı:** Claude ve Codex uç noktaları yalnızca GET; inference isteği yok,
+  abonelik kotasından düşmüyor. Karşı örnek gerçek: Win-CodexBar'da Azure OpenAI (`azureopenai.rs:237`)
+  ve Doubao (`doubao/mod.rs:166`) `max_tokens:1` ile gerçek istek atıyor. Bizimkiler o kategoride değil.
+  **Ama** uç noktanın kendi hız sınırı var (Claude tarafında 429 + Retry-After işleme kodu duruyor),
+  bu yüzden adaptif aralık korunuyor, sabit 2 dk yapılmıyor.
+- **Token geri yazma YOK:** Claude token'ı yenileniyor ama sonuç yalnızca kendi DPAPI korumalı
+  önbelleğimize yazılıyor. `~/.claude/.credentials.json`'a yazsaydık Claude Code'un eşzamanlı
+  yenilemesiyle birbirimizin token'ını ezerdik. Codex tarafında yenileme hiç yapılmıyor —
+  onu CLI kendisi yapıyor (Win-CodexBar da refresh_token'ı bilerek saklamıyor).
+- **Süreçler arası paylaşım = dosya, pipe değil:** widget sağlayıcısı Widgets host tarafından pano
+  açılınca uyandırılıp kapanınca öldürülüyor. Pipe için bizim sürecin ayakta olması gerekirdi;
+  kullanıcı band'ı kapattıysa widget boş kalırdı. Atomik yazılan `snapshot.json` her koşulda okunur.
+  Şema `dashboard/v1` — dosya, widget, telefon ve HTTP host tek şema konuşuyor.
+- **En kısıtlayıcı pencere kuralı:** band pill'inin rengi ve tepsi ikonunun alarmı
+  `MostRestrictive()`'ten geliyor, ilk pencereden değil. Aksi halde Codex'in haftalığı %91 iken
+  band oturum %18'i gösterip susardı.
+- **HICON üretimi CreateDIBSection ile:** `CreateBitmap` cihaz bağımlı bitmap üretiyor ve satır
+  sırası garanti değil. İkonda üst çubuk oturum, alt çubuk haftalık — ters çevrilmiş bir ikon iki
+  kotayı sessizce takas ederdi. Negatif `biHeight` sırayı garanti ediyor.
+- **Widget'ta metin ölçer:** Adaptive Cards'ta yerel ilerleme çubuğu yok. Sütun genişliği + arka
+  plan stiliyle taklit sürümler arası oynak; `TextBlock.color` (good/warning/attention) güvenilir.
+  Ölçer blok karakterlerle çiziliyor, renk oradan geliyor. Aynı JSON Start companion'a da verilebilir.
+- **Ortam notu:** bu oturum Linux konteynerde geçti. .NET 9 SDK kuruldu; Core/SelfTest/Host/
+  ClaudeData/JsHost derlendi ve 147 assertion çalıştırıldı. WinUI ve WindowsAppSDK kodu Linux'ta
+  derlenemez — Roslyn ile sözdizimi ayrıştırması temiz ama **Windows'ta derlenmedi ve çalıştırılmadı.**

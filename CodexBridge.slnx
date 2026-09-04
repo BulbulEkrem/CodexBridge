@@ -13,6 +13,9 @@
       <Platform Project="x64" />
     </Project>
     <Project Path="src/CodexBridge.SelfTest/CodexBridge.SelfTest.csproj" />
+    <Project Path="src/CodexBridge.Widget/CodexBridge.Widget.csproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kimlik + widget sağlayıcısı manifest'i.
+
+  Bu dosya "external location" (sparse) paketi içindir: kurulum akışı, dosya konumları ve
+  Inno Setup adımları DEĞİŞMEZ. Paket yalnızca Windows'a kimlik bildirir; ikililer olduğu
+  yerde kalır.
+
+  Windows'ta tamamlanması gerekenler:
+    1. Publisher alanı imzalama sertifikasının CN'iyle BİREBİR aynı olmalı.
+    2. Assets/ altındaki logo ve ekran görüntüsü üretilmeli
+       (widget seçici görseli: 300x304 px, şeffaf yuvarlatılmış köşe).
+    3. uap10:AllowExternalContent ile exe'lerin gerçek klasörü bildirilmeli.
+    4. Paket imzalanıp Add-AppxPackage -ExternalLocation ile kaydedilmeli.
+
+  DURUM: bu manifest Windows'ta DERLENMEDİ ve KAYDEDİLMEDİ.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  IgnorableNamespaces="uap uap3 uap10 com">
+
+  <!-- TODO(windows): Publisher, imzalama sertifikasının CN'iyle aynı olmalı. -->
+  <Identity
+    Name="BulbulEkrem.CodexBridge"
+    Publisher="CN=CodexBridge Development"
+    Version="0.3.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>CodexBridge</DisplayName>
+    <PublisherDisplayName>CodexBridge</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="tr-TR" />
+  </Resources>
+
+  <Applications>
+    <Application
+      Id="CodexBridge"
+      Executable="CodexBridge.Taskbar.exe"
+      EntryPoint="Windows.FullTrustApplication"
+      uap10:TrustLevel="mediumIL"
+      uap10:RuntimeBehavior="win32App">
+
+      <uap:VisualElements
+        DisplayName="CodexBridge"
+        Description="Claude ve Codex kota ölçeri"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png"
+        BackgroundColor="transparent" />
+
+      <Extensions>
+        <!-- Widget sağlayıcısı ayrı bir exe'de çalışır; host onu COM ile başlatır. -->
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer Executable="CodexBridge.Widget.exe" DisplayName="CodexBridge Widget">
+              <!-- ClassId, WidgetProvider.ClassId ile BİREBİR aynı olmalı. -->
+              <com:Class Id="3f7c9b21-5d84-4a6e-9c13-8b2f4e7a06d5" DisplayName="CodexBridge Quota Widget" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension
+            Name="com.microsoft.windows.widgetprovider"
+            Id="CodexBridgeWidget"
+            PublicFolder="Public"
+            DisplayName="CodexBridge">
+            <uap3:Properties>
+              <WidgetProvider>
+                <ProviderIcons>
+                  <Icon Path="Assets\WidgetIcon.png" />
+                </ProviderIcons>
+                <Activation>
+                  <CreateInstance ClassId="3f7c9b21-5d84-4a6e-9c13-8b2f4e7a06d5" />
+                </Activation>
+                <Definitions>
+                  <!-- Id, WidgetProvider.QuotaWidgetId ile aynı olmalı. -->
+                  <Definition
+                    Id="CodexBridge_Quota"
+                    DisplayName="AI kotası"
+                    Description="Claude ve Codex oturum ve haftalık kotası"
+                    AllowMultiple="false">
+                    <Capabilities>
+                      <Capability><Size Name="small" /></Capability>
+                      <Capability><Size Name="medium" /></Capability>
+                    </Capabilities>
+                    <ThemeResources>
+                      <Icons>
+                        <Icon Path="Assets\WidgetIcon.png" />
+                      </Icons>
+                      <Screenshots>
+                        <!-- 300x304 px, şeffaf yuvarlatılmış köşe (Microsoft'un seçici şartı). -->
+                        <Screenshot Path="Assets\WidgetScreenshot.png" DisplayAltText="CodexBridge kota widget'ı" />
+                      </Screenshots>
+                      <DarkMode />
+                      <LightMode />
+                    </ThemeResources>
+                  </Definition>
+                </Definitions>
+              </WidgetProvider>
+            </uap3:Properties>
+          </uap3:AppExtension>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+</Package>
