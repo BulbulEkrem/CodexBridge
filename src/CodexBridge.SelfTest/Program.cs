@@ -234,6 +234,67 @@ Check("429: hata etiketi ekleniyor", degraded.Error?.Code == "RateLimited");
 Check("429: updatedAt eskide kalıyor (veri yaşı dürüst)", degraded.UpdatedAt == t0);
 testClock.Now = t0;
 
+// --- Toplayıcı: SeedLastGood (yeniden başlatma / ayar kaydetme sonrası) ---
+// Canlı testte bulundu: _lastGood yalnızca nesne ömrü kadar yaşıyor. Beslenmezse süreç
+// yeniden başladıktan ya da ReloadSettings() yeni toplayıcı kurduktan sonraki İLK hatalı
+// çekim, sayıyı yaşlandırmak yerine boş hata satırı üretiyordu.
+var goodSnapshot = new DashboardSnapshot
+{
+    SchemaVersion = 1,
+    GeneratedAt = t0,
+    StaleAfterSeconds = 180,
+    Host = new HostInfo { CodexBarVersion = "t", RefreshIntervalSeconds = 120 },
+    Providers = [claudeRow],
+};
+
+var coldSource = new FakeProviderSource(ProviderIds.Claude,
+    () => throw new ProviderSourceException(ProviderErrorKind.RateLimited, "Hız sınırı.", TimeSpan.FromMinutes(5)));
+var cold = new AggregateUsageSource([coldSource], testClock);
+var coldRow = (await cold.GetSnapshotAsync()).Providers[0];
+Check("seed yok: ilk hatalı çekim boş satır veriyor (hatanın kendisi)", coldRow.Windows.Count == 0);
+
+var seeded = new AggregateUsageSource([coldSource], testClock);
+seeded.SeedLastGood(goodSnapshot);
+var seededRow = (await seeded.GetSnapshotAsync()).Providers[0];
+Check("seed: ilk hatalı çekimde pencereler korunuyor", seededRow.Windows.Count == 2);
+Check("seed: yüzde diskteki değerden geliyor", seededRow.Window(WindowKinds.Weekly)!.UsedPercent == 78);
+Check("seed: hata etiketi yine ekleniyor", seededRow.Error?.Code == "RateLimited");
+Check("seed: updatedAt eskide kalıyor", seededRow.UpdatedAt == t0);
+
+// Hata satırı devralınmamalı: yoksa bir hata sonsuza kadar "son bilinen değer" olarak kalır.
+var errorSnapshot = goodSnapshot with
+{
+    Providers = [ProviderRowFactory.CreateError(ProviderIds.Claude, ProviderErrorKind.RateLimited, "eski hata", t0)],
+};
+var seededFromError = new AggregateUsageSource([coldSource], testClock);
+seededFromError.SeedLastGood(errorSnapshot);
+Check("seed: hata satırı devralınmıyor",
+    (await seededFromError.GetSnapshotAsync()).Providers[0].Windows.Count == 0);
+
+// Canlı çekim her zaman diskten üstün: seed mevcut girişi ezmemeli.
+var freshSource = new FakeProviderSource(ProviderIds.Claude, () => claudeRow);
+var seedAfter = new AggregateUsageSource([freshSource], testClock);
+await seedAfter.GetSnapshotAsync();
+var staleWindows = new List<CodexBridge.Core.Dashboard.RateWindow>
+{
+    RateWindowFactory.Create(WindowKinds.Weekly, "Haftalık", 5, t0.AddDays(3)),
+};
+seedAfter.SeedLastGood(goodSnapshot with
+{
+    Providers = [ProviderRowFactory.Create(ProviderIds.Claude, "oauth", staleWindows, t0)],
+});
+freshSource.Next = () => throw new ProviderSourceException(
+    ProviderErrorKind.RateLimited, "Hız sınırı.", TimeSpan.FromMinutes(5));
+Check("seed: canlı çekimle gelen değeri ezmiyor",
+    (await seedAfter.GetSnapshotAsync()).Providers[0].Window(WindowKinds.Weekly)!.UsedPercent == 78);
+
+Check("seed: null snapshot güvenli", SeedNullIsSafe());
+static bool SeedNullIsSafe()
+{
+    new AggregateUsageSource([]).SeedLastGood(null);
+    return true;
+}
+
 // --- Hız sınırı sarmalayıcısı ---
 var rlClock = new TestClock { Now = t0 };
 var rlSource = new FakeProviderSource(ProviderIds.Codex,

@@ -26,6 +26,36 @@ public sealed class AggregateUsageSource(
     /// <summary>Snapshot'a yazılacak yenileme aralığı ipucu.</summary>
     public int RefreshIntervalSeconds { get; set; }
 
+    /// <summary>
+    /// Son bilinen değerleri önceki bir snapshot'tan doldurur (diskteki kalıcı snapshot veya
+    /// kaynak değiştirilirken devralınan bellek içi snapshot).
+    ///
+    /// <para><b>Neden gerekli:</b> <c>_lastGood</c> yalnızca bu nesnenin ömrü boyunca yaşıyor.
+    /// Beslenmezse süreç yeniden başladıktan ya da ayarlar kaydedildikten (yeni
+    /// <see cref="AggregateUsageSource"/> kurulur) sonraki İLK çekim patladığında
+    /// <see cref="Degrade"/> gösterecek değer bulamıyor; boş hata satırı dönüyor ve bu satır
+    /// diskteki iyi snapshot'ın üzerine yazılıyor. Canlı testte Claude 429'unda görüldü:
+    /// pill sayıyı yaşlandırmak yerine <c>—</c> gösterdi.</para>
+    ///
+    /// <para>Yalnızca <b>gerçekten veri taşıyan</b> satırlar alınır: hata satırlarını devralmak
+    /// bir hatayı sonsuza kadar "son bilinen değer" diye saklamak olurdu. Zaten var olan bir
+    /// giriş ezilmez — canlı çekim her zaman diskten üstündür.</para>
+    /// </summary>
+    public void SeedLastGood(DashboardSnapshot? snapshot)
+    {
+        if (snapshot is null) return;
+
+        lock (_gate)
+        {
+            foreach (var row in snapshot.Providers)
+            {
+                if (row.Error is not null || row.Windows.Count == 0) continue;
+                if (_lastGood.ContainsKey(row.Id)) continue;
+                _lastGood[row.Id] = row;
+            }
+        }
+    }
+
     public async Task<DashboardSnapshot> GetSnapshotAsync(CancellationToken ct = default)
     {
         var tasks = sources.Select(s => FetchOneAsync(s, ct)).ToArray();

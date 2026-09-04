@@ -51,6 +51,26 @@ dotnet build CodexBridge.slnx -c Debug
 dotnet build src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj -c Debug -p:Platform=x64
 ```
 
+### Çalıştırma gereksinimi: Windows App Runtime
+
+Bildirimler için **Windows App Runtime**'ın kurulu olması şart. NuGet paketi yetmiyor:
+paketsiz (unpackaged) bir uygulamada `AppNotificationManager`'ın COM sunucusunu
+**Singleton** paketi barındırıyor ve o yalnızca redistributable ile geliyor. Eksikse
+kayıt `0x80040154 REGDB_E_CLASSNOTREG` ile düşer ve **hiçbir bildirim gönderilmez** —
+band ve tepsi ikonu çalışmaya devam ettiği için bu sessiz bir arıza olarak görünür.
+
+```powershell
+# https://aka.ms/windowsappsdk/1.8/latest/windowsappruntimeinstall-x64.exe
+.\WindowsAppRuntimeInstall-x64.exe --quiet
+```
+
+Kurulu olup olmadığını doğrulamak için (yayıncı adının `MicrosoftCorporationII` olduğuna
+dikkat — `Microsoft.WindowsAppRuntime.*` araması bu paketi bulmaz):
+
+```powershell
+Get-AppxPackage | Where-Object { $_.Name -like "*Singleton*" }
+```
+
 ## Durum
 
 ### Bağımsız veri katmanı (bu ortamda derlendi ve test edildi ✓)
@@ -66,16 +86,28 @@ dotnet build src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj -c Debug -p:Plat
 - Tek yenileme noktası (`RefreshCoordinator`) + atomik `snapshot.json`.
 - **SelfTest: 147 assertion, tümü geçiyor.**
 
-### Windows yüzeyleri (yazıldı, Windows'ta DERLENMEDİ ⏳)
-- **Görev çubuğu bandı** — B varyantı: sağlayıcı başına tek pill, içinde iki çubuk
-  (üst oturum, alt haftalık); pill rengi **en kısıtlayıcı** pencereden.
-- **Tepsi ikonu** — band'ın yedeği. 32×32 çizim Core'da ve test edilmiş;
-  128 karakterlik tooltip sınırına sığdırma test edilmiş.
-- **Bildirim** — canlı kota kartı (`UpdateAsync` ile yerinde tazelenen ilerleme çubuğu)
-  + eşik uyarıları + kritik geçişte `Urgent` senaryosu.
-- **Ayarlar penceresi** — sağlayıcı aç/kapa, kimlik durumu, eşikler, otomatik başlatma.
-- **Widget sağlayıcısı** — Adaptive Cards içeriği Core'da ve test edilmiş; COM host'u ve
+### Windows yüzeyleri (2026-09-04'te gerçek makinede derlendi ve çalıştırıldı ✓)
+- **Görev çubuğu bandı** ✅ — B varyantı: sağlayıcı başına tek pill, içinde iki çubuk
+  (üst oturum, alt haftalık); pill rengi **en kısıtlayıcı** pencereden. Çubuğun gerçek
+  çocuğu olduğu doğrulandı (`Shell_TrayWnd` altında, `WS_CHILD`, krom yok). Ortadaki
+  kümenin sol kenarına yaslanıyor — Win11'de sabit sol ofset hava durumu widget'ının
+  üstüne biniyor.
+- **Tepsi ikonu** ✅ — ikon, tooltip (iki satır, en kısıtlayıcı pencere + geri sayım) ve
+  sağ tık menüsü canlı doğrulandı. Windows yeni ikonları taşma menüsüne koyar.
+- **Bildirim** ✅ — canlı kota kartı Bildirim Merkezi'nde doğrulandı: tek ilerleme çubuğu
+  = en kısıtlayıcı pencere, diğer pencere durum satırında, geri sayım çubuğun sağında.
+  **Windows App Runtime gerektiriyor** (bkz. Derleme).
+- **Ayarlar penceresi** ⏳ — yazıldı, canlı açılıp kaydetmesi doğrulandı ama gözden geçirilmedi.
+- **Widget sağlayıcısı** ⏳ — Adaptive Cards içeriği Core'da ve test edilmiş; COM host'u ve
   sparse package manifest'i yazıldı, **paketleme Windows'ta tamamlanmalı**.
+
+### Bilinen açık hata
+- **Son bilinen değer yeniden başlatmada kayboluyor.** `AggregateUsageSource._lastGood`
+  yalnızca nesne ömrü boyunca yaşıyor; `AppHost` diskteki snapshot'ı yüzeylere gönderiyor
+  ama bu sözlüğe beslemiyor, ve `ReloadSettings()` sözlüğü sıfırlıyor. Süreç yeniden
+  başladıktan veya ayarlar kaydedildikten sonra ilk çekim hata verirse pill `—` gösteriyor
+  ve boş satır diskteki iyi snapshot'ın üzerine yazılıyor. Aşağıdaki "son bilinen değer
+  korunuyor" vaadi bu iki durumda tutmuyor.
 
 ### Önceki fazlar
 - ✅ Faz 0/1 — görev çubuğu tekniği + Explorer-restart gözcüsü, kullanıcı makinesinde canlı doğrulandı
@@ -86,7 +118,11 @@ dotnet build src/CodexBridge.Taskbar/CodexBridge.Taskbar.csproj -c Debug -p:Plat
 - 🧩 Faz 4 — iOS/Android widget iskeleleri (ilgili araç zincirinde derlenir)
 
 ### Canlı test bekleyenler (kullanıcı makinesinde)
-Band'ın B varyantı, tepsi ikonu ve tooltip'i, bildirim kartı ve eşik uyarıları,
-widget paketleme ve panoda görünme, gerçek Claude/Codex kimlikleriyle uçtan uca çekim.
+Eşik uyarıları (kota gerçekten eşiği geçtiğinde), widget paketleme ve panoda görünme,
+ayarlar penceresinin gözden geçirilmesi, ikinci monitör / farklı DPI, telefon widget'ları.
+
+2026-09-04'te kapananlar: band ve konumlanması, tepsi ikonu + tooltip + menü, bildirim
+kartı, Explorer-restart hayatta kalması, gerçek Claude/Codex kimlikleriyle uçtan uca
+çekim (band'daki değerler ayrı bir süreçten yapılan bağımsız çekimle karşılaştırıldı).
 
 Ayrıntı: [docs/07-CANLI-TEST-KONTROL-LISTESI.md](docs/07-CANLI-TEST-KONTROL-LISTESI.md)

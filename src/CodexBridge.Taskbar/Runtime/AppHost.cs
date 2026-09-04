@@ -56,6 +56,11 @@ public sealed class AppHost : IDisposable
         _aggregate = new AggregateUsageSource(
             ProviderFactory.CreateEnabled(Settings, _http, _tokens),
             version: "codexbridge-" + AppVersion);
+
+        // Yeni toplayıcının son-bilinen-değer sözlüğü boş doğuyor. Devretmezsek ayar kaydetmek
+        // tüm değerleri siliyor ve ardından gelen ilk hatalı çekimde pill'ler "—" oluyor.
+        _aggregate.SeedLastGood(Coordinator.Current ?? Store.Read());
+
         Coordinator.ReplaceSource(_aggregate);
         Coordinator.RequestRefresh();
     }
@@ -65,7 +70,14 @@ public sealed class AppHost : IDisposable
     public void Start()
     {
         if (Store.Read() is { } cached)
+        {
+            // Sadece göstermek yetmiyor: toplayıcı da bu değerleri bilmeli. Bilmezse açılıştaki
+            // ilk çekim patladığında (ör. sağlayıcı 429) boş hata satırı üretir ve diskteki
+            // sağlam snapshot'ın üzerine yazar — kullanıcı sayının yaşlandığını değil, yok
+            // olduğunu görür.
+            _aggregate.SeedLastGood(cached);
             Updated?.Invoke(cached);
+        }
 
         _loop = Coordinator.RunAsync(_cts.Token);
     }
